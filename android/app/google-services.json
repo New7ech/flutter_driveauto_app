@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1069717813729",
+    "project_id": "driveauto-ed6b7",
+    "storage_bucket": "driveauto-ed6b7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1069717813729:android:2b30d2efb9ec8bcc0ffaa0",
+        "android_client_info": {
+          "package_name": "com.example.flutter_driveauto_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1069717813729-31uv4ciop0fhn570mp9dsba1rs8admkr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDxkwyA-e1CALGbVjvfDVLUOFNbqkFwKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069717813729-31uv4ciop0fhn570mp9dsba1rs8admkr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

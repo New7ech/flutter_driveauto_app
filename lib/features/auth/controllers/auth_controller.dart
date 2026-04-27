@@ -1,0 +1,282 @@
+// DriveAuto - auth_controller.dart
+// Role: Gestion de l'etat d'authentification (Firebase ou fallback local)
+// Auteur : DriveAuto Team
+
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/notification_service.dart';
+import '../../../providers/repository_providers.dart';
+import '../models/app_auth_user.dart';
+import '../services/auth_service.dart';
+
+final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
+  if (Firebase.apps.isEmpty) {
+    return null;
+  }
+  return FirebaseAuth.instance;
+});
+
+final googleSignInProvider = Provider<GoogleSignIn>((ref) {
+  return GoogleSignIn();
+});
+
+final authServiceProvider = Provider<AuthService>((ref) {
+  Box? safeBox(String boxName) {
+    try {
+      if (Hive.isBoxOpen(boxName)) {
+        return Hive.box(boxName);
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  final service = AuthService(
+    firebaseAuth: ref.watch(firebaseAuthProvider),
+    googleSignIn: ref.watch(googleSignInProvider),
+    localUsersBox: safeBox(AppConstants.hiveAuthUsersBox),
+    localSessionBox: safeBox(AppConstants.hiveAuthSessionBox),
+  );
+
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+final authStateProvider = StreamProvider<AppAuthUser?>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  return authService.authStateChanges();
+});
+
+final currentAuthUserProvider = Provider<AppAuthUser?>((ref) {
+  final authState = ref.watch(authStateProvider);
+  return authState.valueOrNull ?? ref.watch(authServiceProvider).currentUser;
+});
+
+final userRoleProvider = Provider<String>((ref) {
+  return ref.watch(currentAuthUserProvider)?.role ?? 'apprenant';
+});
+
+final authLandingRouteProvider = Provider<String>((ref) {
+  final role = ref.watch(userRoleProvider);
+  return role == 'admin'
+      ? AppConstants.routeAdmin
+      : AppConstants.routeDashboard;
+});
+
+final authBackendTypeProvider = Provider<AuthBackendType>((ref) {
+  return ref.watch(authServiceProvider).backendType;
+});
+
+final authBackendLabelProvider = Provider<String>((ref) {
+  return ref.watch(authServiceProvider).backendLabel;
+});
+
+final googleSignInAvailableProvider = Provider<bool>((ref) {
+  return ref.watch(authServiceProvider).supportsGoogleSignIn;
+});
+
+final isLocalAuthModeProvider = Provider<bool>((ref) {
+  return ref.watch(authBackendTypeProvider) == AuthBackendType.local;
+});
+
+final authControllerProvider = AsyncNotifierProvider<AuthController, void>(() {
+  return AuthController();
+});
+
+class AuthController extends AsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {}
+
+  Future<AppAuthUser?> login(String email, String password) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await ref
+          .read(authServiceProvider)
+          .login(email: email, password: password);
+
+      await _syncUserProfile(user);
+      _subscribeToTopics();
+      state = const AsyncValue.data(null);
+      return user;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return null;
+    }
+  }
+
+  Future<AppAuthUser?> register({
+    required String displayName,
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await ref
+          .read(authServiceProvider)
+          .register(displayName: displayName, email: email, password: password);
+
+      await _syncUserProfile(user);
+      await _sendVerificationEmailIfPossible();
+      _subscribeToTopics();
+      state = const AsyncValue.data(null);
+      return user;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return null;
+    }
+  }
+
+  Future<AppAuthUser?> loginWithGoogle() async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await ref.read(authServiceProvider).loginWithGoogle();
+
+      await _syncUserProfile(user);
+      _subscribeToTopics();
+      state = const AsyncValue.data(null);
+      return user;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return null;
+    }
+  }
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(authServiceProvider).updatePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return false;
+    }
+  }
+
+  Future<bool> requestPasswordReset(String email) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(authServiceProvider).sendPasswordReset(email);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return false;
+    }
+  }
+
+  Future<bool> resendEmailVerification() async {
+    state = const AsyncValue.loading();
+    try {
+      await _sendVerificationEmailIfPossible();
+      final refreshedUser = await ref
+          .read(authServiceProvider)
+          .reloadCurrentUser();
+      if (refreshedUser != null) {
+        await _syncUserProfile(refreshedUser);
+      }
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return false;
+    }
+  }
+
+  Future<AppAuthUser?> refreshSession() async {
+    try {
+      final user = await ref.read(authServiceProvider).reloadCurrentUser();
+      if (user != null) {
+        await _syncUserProfile(user);
+      }
+      return user;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> logout() async {
+    state = const AsyncValue.loading();
+    try {
+      await ref.read(authServiceProvider).logout();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error('Erreur lors de la deconnexion : $e', st);
+    }
+  }
+
+  Future<void> _syncUserProfile(AppAuthUser user) async {
+    try {
+      await ref
+          .read(userRepositoryProvider)
+          .saveUserProfile(
+            userId: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            role: user.role,
+            emailVerified: user.emailVerified,
+            provider: user.provider,
+            createdAt: user.createdAt,
+            lastLoginAt: user.lastLoginAt,
+          );
+    } catch (_) {
+      // Le profil ne doit pas bloquer l'authentification si Firestore est indisponible.
+    }
+  }
+
+  void _subscribeToTopics() {
+    NotificationService().subscribeToTopic('rappel_lecon');
+    NotificationService().subscribeToTopic('nouveau_cours');
+  }
+
+  Future<void> _sendVerificationEmailIfPossible() async {
+    try {
+      await ref.read(authServiceProvider).sendEmailVerification();
+    } catch (_) {
+      // L'envoi de verification ne doit pas annuler l'authentification.
+    }
+  }
+
+  String _handleAuthError(dynamic e) {
+    if (e is AppAuthException) {
+      return e.message;
+    }
+
+    if (e is FirebaseAuthException) {
+      switch (e.code) {
+        case 'user-not-found':
+          return 'Aucun utilisateur trouve pour cet email.';
+        case 'wrong-password':
+        case 'invalid-credential':
+          return 'Email ou mot de passe incorrect.';
+        case 'email-already-in-use':
+          return 'Cet email est deja utilise par un autre compte.';
+        case 'invalid-email':
+          return 'Format d email invalide.';
+        case 'weak-password':
+          return 'Le mot de passe est trop faible.';
+        case 'too-many-requests':
+          return 'Trop de tentatives. Reessayez dans quelques instants.';
+        default:
+          return 'Erreur d authentification: ${e.message}';
+      }
+    }
+
+    return 'Une erreur inattendue est survenue: $e';
+  }
+}

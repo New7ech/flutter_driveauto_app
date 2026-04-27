@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Collection users — chaque utilisateur lit son propre doc ; admin lit tout
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Progression — utilisateur ou admin
+    match /users_progress/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // Leçons — lecture pour tous les authentifiés, écriture admin
+    match /lecons/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Quiz — lecture pour tous les authentifiés, écriture admin
+    match /quizzes/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Séries de cours — lecture pour tous, écriture admin
+    match /series/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Annonces — lecture pour tous les authentifiés, écriture admin
+    match /annonces/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Examens proposés — lecture pour tous les authentifiés, écriture admin
+    match /examens_proposes/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Séances pratiques — lecture pour tous les authentifiés, écriture admin
+    match /seances_pratiques/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

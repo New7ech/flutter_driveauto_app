@@ -1,0 +1,28 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "driveauto-ed6b7",
+          "appId": "1:1069717813729:android:2b30d2efb9ec8bcc0ffaa0",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "driveauto-ed6b7",
+          "configurations": {
+            "android": "1:1069717813729:android:2b30d2efb9ec8bcc0ffaa0",
+            "ios": "1:1069717813729:ios:115ead18b364ec4d0ffaa0",
+            "macos": "1:1069717813729:ios:115ead18b364ec4d0ffaa0",
+            "web": "1:1069717813729:web:1c145e5307a6ea0a0ffaa0",
+            "windows": "1:1069717813729:web:63a53b4d023bf5a40ffaa0"
+          }
+        }
+      }
+    }
+  }
+}
