@@ -64,5 +64,16 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
+
+    // Paramètres de l'auto-école — lecture et écriture admin uniquement
+    match /parametres/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Résultats des examens — création par tout apprenant authentifié, lecture admin
+    match /resultats_examens/{docId} {
+      allow create: if isAuthenticated();
+      allow read, update, delete: if isAdmin();
+    }
   }
 }

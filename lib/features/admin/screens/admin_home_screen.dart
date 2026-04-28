@@ -1,6 +1,7 @@
 // DriveAuto — admin_home_screen.dart
 // Role : Tableau de bord Super-Administrateur — design premium
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +12,54 @@ import '../../../providers/serie_provider.dart';
 import 'admin_annonces_screen.dart';
 import 'admin_classement_screen.dart';
 import 'admin_examen_propose_screen.dart';
+import 'admin_parametres_screen.dart';
 import 'admin_planning_screen.dart';
+import 'admin_resultats_examens_screen.dart';
 import 'admin_series_screen.dart';
 import 'admin_stats_screen.dart';
 import 'admin_users_screen.dart';
+
+// ─── KPI temps réel (Firestore) ──────────────────────────────────────────────
+
+final _adminApprenantCountProvider = StreamProvider.autoDispose<int>((ref) {
+  return FirebaseFirestore.instance
+      .collection('users')
+      .where('role', isEqualTo: 'apprenant')
+      .snapshots()
+      .map((s) => s.docs.length);
+});
+
+final _adminSeancesAVenirCountProvider = StreamProvider.autoDispose<int>((ref) {
+  return FirebaseFirestore.instance
+      .collection('seances_pratiques')
+      .snapshots()
+      .map((s) {
+    final now = DateTime.now();
+    return s.docs.where((d) {
+      final ts = d.data()['dateSeance'];
+      if (ts == null) return false;
+      final date = (ts as Timestamp).toDate();
+      final statut = d.data()['statut'] as String? ?? 'planifiee';
+      return statut == 'planifiee' && date.isAfter(now);
+    }).length;
+  });
+});
+
+final _adminAnnoncesActivesCountProvider =
+    StreamProvider.autoDispose<int>((ref) {
+  return FirebaseFirestore.instance
+      .collection('annonces')
+      .snapshots()
+      .map((s) =>
+          s.docs.where((d) => d.data()['active'] as bool? ?? true).length);
+});
+
+final _adminResultatsCountProvider = StreamProvider.autoDispose<int>((ref) {
+  return FirebaseFirestore.instance
+      .collection('resultats_examens')
+      .snapshots()
+      .map((s) => s.docs.length);
+});
 
 const _kAdminPrimary = Color(0xFF7B1FA2);
 const _kAdminDark = Color(0xFF4A148C);
@@ -26,10 +71,18 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final series = ref.watch(seriesProvider);
     final totalSlides =
-        series.fold(0, (sum, s) => sum + s.nombreDiapositives);
+        series.fold(0, (acc, s) => acc + s.nombreDiapositives);
     final totalQuestions =
-        series.fold(0, (sum, s) => sum + s.nombreQuestions);
+        series.fold(0, (acc, s) => acc + s.nombreQuestions);
     final user = ref.watch(currentAuthUserProvider);
+    final apprenantCount =
+        ref.watch(_adminApprenantCountProvider).valueOrNull ?? 0;
+    final seancesCount =
+        ref.watch(_adminSeancesAVenirCountProvider).valueOrNull ?? 0;
+    final annoncesCount =
+        ref.watch(_adminAnnoncesActivesCountProvider).valueOrNull ?? 0;
+    final resultatsCount =
+        ref.watch(_adminResultatsCountProvider).valueOrNull ?? 0;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -46,6 +99,8 @@ class AdminHomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                _buildKpiRow(context, apprenantCount, seancesCount,
+                    annoncesCount, resultatsCount),
                 _buildSectionLabel(context, '📚  Contenu pédagogique'),
                 _buildMenuGrid(context, [
                   _MenuItem(
@@ -104,6 +159,26 @@ class AdminHomeScreen extends ConsumerWidget {
                     subtitle: 'Séances pratiques',
                     colors: [Colors.teal.shade600, Colors.teal.shade900],
                     onTap: () => _push(context, const AdminPlanningScreen()),
+                  ),
+                ]),
+                const SizedBox(height: 20),
+                _buildSectionLabel(context, '🏆  Résultats & Paramètres'),
+                _buildMenuGrid(context, [
+                  _MenuItem(
+                    icon: Icons.assignment_turned_in_rounded,
+                    label: 'Résultats examens',
+                    subtitle: 'Historique des passages',
+                    colors: [const Color(0xFF7B1FA2), const Color(0xFF4A148C)],
+                    onTap: () => _push(
+                        context, const AdminResultatsExamensScreen()),
+                  ),
+                  _MenuItem(
+                    icon: Icons.settings_rounded,
+                    label: 'Paramètres',
+                    subtitle: 'Infos de l\'auto-école',
+                    colors: [Colors.blueGrey.shade600, Colors.blueGrey.shade900],
+                    onTap: () =>
+                        _push(context, const AdminParametresScreen()),
                   ),
                 ]),
                 const SizedBox(height: 20),
@@ -302,6 +377,53 @@ class AdminHomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────────────
+  // KPI ROW (temps réel)
+  // ────────────────────────────────────────────────────────────────────
+
+  Widget _buildKpiRow(
+    BuildContext context,
+    int apprenants,
+    int seances,
+    int annonces,
+    int resultats,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        children: [
+          _KpiCard(
+            icon: Icons.people_rounded,
+            label: 'Apprenants',
+            value: '$apprenants',
+            color: Colors.blue.shade700,
+          ),
+          const SizedBox(width: 8),
+          _KpiCard(
+            icon: Icons.event_available_rounded,
+            label: 'Séances',
+            value: '$seances',
+            color: Colors.teal.shade600,
+          ),
+          const SizedBox(width: 8),
+          _KpiCard(
+            icon: Icons.campaign_rounded,
+            label: 'Annonces',
+            value: '$annonces',
+            color: Colors.orange.shade700,
+          ),
+          const SizedBox(width: 8),
+          _KpiCard(
+            icon: Icons.assignment_rounded,
+            label: 'Examens',
+            value: '$resultats',
+            color: Colors.indigo.shade600,
+          ),
+        ],
       ),
     );
   }
@@ -541,6 +663,56 @@ class _QuickChip extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KpiCard extends StatelessWidget {
+  const _KpiCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.22)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.75)),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../domain/models/user_progress.dart';
 import '../../../providers/repository_providers.dart';
 import '../../auth/controllers/auth_controller.dart';
@@ -31,6 +30,58 @@ final annoncesActiveProvider = StreamProvider<List<Map<String, dynamic>>>((ref) 
           .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
           .where((d) => d['active'] as bool? ?? true)
           .toList());
+});
+
+// Examens officiels proposés et actifs (filtre Dart pour éviter l'index composite)
+final examensProposesActiveProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return FirebaseFirestore.instance
+      .collection('examens_proposes')
+      .orderBy('dateCreation', descending: true)
+      .snapshots()
+      .map((snap) {
+    final now = DateTime.now();
+    return snap.docs
+        .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+        .where((d) {
+          if (!(d['actif'] as bool? ?? true)) return false;
+          final dl = d['dateLimite'];
+          if (dl == null) return true;
+          final date = dl is Timestamp ? dl.toDate() : null;
+          return date == null || date.isAfter(now);
+        })
+        .toList();
+  });
+});
+
+// Séances pratiques de l'apprenant connecté (filtre Dart pour éviter l'index composite)
+final seancesApprenantProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final uid = ref.watch(currentAuthUserProvider)?.id;
+  if (uid == null) return const Stream.empty();
+  return FirebaseFirestore.instance
+      .collection('seances_pratiques')
+      .where('apprenantId', isEqualTo: uid)
+      .snapshots()
+      .map((snap) {
+    final now = DateTime.now();
+    return snap.docs
+        .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+        .where((d) {
+          final ts = d['dateSeance'];
+          if (ts == null) return false;
+          final date = ts is Timestamp ? ts.toDate() : null;
+          if (date == null) return false;
+          final statut = d['statut'] as String? ?? 'planifiee';
+          return statut == 'planifiee' && date.isAfter(now);
+        })
+        .toList()
+      ..sort((a, b) {
+        final ta = (a['dateSeance'] as Timestamp).toDate();
+        final tb = (b['dateSeance'] as Timestamp).toDate();
+        return ta.compareTo(tb);
+      });
+  });
 });
 
 class DashboardScreen extends ConsumerWidget {
@@ -280,6 +331,11 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 20),
                 ],
                 _buildAnnoncesSection(context, ref),
+                _buildExamensProposeSection(context, ref),
+                _buildSectionTitle(context, 'Rendez-vous Pratique'),
+                const SizedBox(height: 12),
+                _buildAppointmentCard(context, ref),
+                const SizedBox(height: 28),
                 Text(
                   'Commencer l\'apprentissage',
                   style: Theme.of(context)
@@ -341,6 +397,8 @@ class DashboardScreen extends ConsumerWidget {
                 ],
                 // Annonces
                 _buildAnnoncesSection(context, ref),
+                // Examens proposés
+                _buildExamensProposeSection(context, ref),
                 // Progression
                 _buildSectionTitle(context, 'Ma Progression'),
                 const SizedBox(height: 12),
@@ -381,7 +439,7 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 28),
                 _buildSectionTitle(context, 'Rendez-vous Pratique'),
                 const SizedBox(height: 12),
-                _buildAppointmentCard(context, progress),
+                _buildAppointmentCard(context, ref),
                 const SizedBox(height: 28),
                 _buildSectionTitle(context, 'Historique des Quiz'),
                 const SizedBox(height: 12),
@@ -434,65 +492,50 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   // ────────────────────────────────────────────────────────
+  // EXAMENS PROPOSÉS (vue apprenant)
+  // ────────────────────────────────────────────────────────
+
+  Widget _buildExamensProposeSection(BuildContext context, WidgetRef ref) {
+    final examensAsync = ref.watch(examensProposesActiveProvider);
+    return examensAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (examens) {
+        if (examens.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle(context, 'Examens proposés'),
+            const SizedBox(height: 12),
+            ...examens.map((e) => _ExamenProposeApprenant(data: e)),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  // ────────────────────────────────────────────────────────
   // APPOINTMENT CARD
   // ────────────────────────────────────────────────────────
 
-  Widget _buildAppointmentCard(BuildContext context, UserProgress progress) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppConstants.primaryColor.withValues(alpha: 0.07),
-            AppConstants.primaryColor.withValues(alpha: 0.02),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: AppConstants.primaryColor.withValues(alpha: 0.2)),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppConstants.primaryColor, Color(0xFF007A4D)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(Icons.calendar_month_rounded,
-              color: Colors.white, size: 24),
-        ),
-        title: Text(
-          progress.nextPracticalLessonDate != null
-              ? Formatters.formatDateTime(progress.nextPracticalLessonDate!)
-              : 'Aucun rendez-vous planifié',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          progress.nextPracticalLessonDate != null
-              ? 'Moniteur : À définir'
-              : 'Contactez l\'auto-école pour fixer une date',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppConstants.primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.arrow_forward_ios,
-              size: 14, color: AppConstants.primaryColor),
-        ),
-        onTap: () => context.go(AppConstants.routePractice),
-      ),
+  Widget _buildAppointmentCard(BuildContext context, WidgetRef ref) {
+    final seancesAsync = ref.watch(seancesApprenantProvider);
+
+    return seancesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _SeanceVide(message: 'Erreur : $e'),
+      data: (seances) {
+        if (seances.isEmpty) {
+          return const _SeanceVide(
+              message: 'Contactez l\'auto-école pour planifier une séance');
+        }
+        return Column(
+          children: seances
+              .map((s) => _SeanceCard(data: s))
+              .toList(),
+        );
+      },
     );
   }
 
@@ -816,6 +859,167 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SÉANCE PRATIQUE (vue apprenant)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SeanceVide extends StatelessWidget {
+  const _SeanceVide({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      decoration: BoxDecoration(
+        color: AppConstants.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppConstants.primaryColor, Color(0xFF007A4D)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.calendar_month_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeanceCard extends StatelessWidget {
+  const _SeanceCard({required this.data});
+  final Map<String, dynamic> data;
+
+  DateTime get _date =>
+      (data['dateSeance'] as Timestamp).toDate();
+  String get _moniteur => data['moniteur'] as String? ?? 'À définir';
+  String get _lieu => data['lieu'] as String? ?? '';
+  String get _notes => data['notes'] as String? ?? '';
+
+  String _fmt(DateTime d) {
+    const jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    final j = jours[(d.weekday - 1).clamp(0, 6)];
+    final hh = d.hour.toString().padLeft(2, '0');
+    final mm = d.minute.toString().padLeft(2, '0');
+    return '$j ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year} à ${hh}h$mm';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppConstants.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border:
+            Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppConstants.primaryColor, Color(0xFF007A4D)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.directions_car_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _fmt(_date),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    Text(
+                      'Moniteur : $_moniteur',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppConstants.primaryColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Planifiée',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_lieu.isNotEmpty || _notes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            if (_lieu.isNotEmpty)
+              Row(
+                children: [
+                  Icon(Icons.location_on_rounded,
+                      size: 13, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Text(_lieu,
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            if (_notes.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                _notes,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -1198,6 +1402,135 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CARTE EXAMEN PROPOSÉ (vue apprenant)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ExamenProposeApprenant extends StatelessWidget {
+  const _ExamenProposeApprenant({required this.data});
+  final Map<String, dynamic> data;
+
+  String get _titre => data['titre'] as String? ?? 'Examen';
+  String get _description => data['description'] as String? ?? '';
+  int get _nbQuestions => data['nombreQuestions'] as int? ?? 40;
+  int get _duree => data['dureeMinutes'] as int? ?? 30;
+  String get _message => data['message'] as String? ?? '';
+  DateTime? get _dateLimite {
+    final v = data['dateLimite'];
+    if (v is Timestamp) return v.toDate();
+    return null;
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = _dateLimite;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppConstants.secondaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppConstants.secondaryColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEF0107), Color(0xFF8B0000)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(Icons.school_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _titre,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '$_nbQuestions questions • $_duree min',
+                      style:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppConstants.secondaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Officiel',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: AppConstants.secondaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_description.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(_description,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+          ],
+          if (_message.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '"$_message"',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                  color: AppConstants.secondaryColor.withValues(alpha: 0.8)),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          if (dl != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.event_rounded,
+                    size: 12, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  'Limite : ${_fmtDate(dl)}',
+                  style:
+                      TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

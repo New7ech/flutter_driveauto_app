@@ -316,12 +316,35 @@ class AuthService {
       return;
     }
 
-    if (_readLocalUser(normalizedEmail) == null) {
+    // Mode local : pas d'email possible — lever une erreur explicite.
+    throw const AppAuthException(
+      code: 'local-mode-no-email',
+      message:
+          'local-mode', // code sentinelle capturé dans le contrôleur
+    );
+  }
+
+  /// Réinitialise directement le mot de passe en mode local (sans email).
+  Future<void> resetLocalPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    if (isUsingFirebase) {
       throw const AppAuthException(
-        code: 'user-not-found',
-        message: 'Aucun utilisateur trouve pour cet email.',
+        code: 'not-local-mode',
+        message: 'Cette méthode est réservée au mode local.',
       );
     }
+    final normalizedEmail = _normalizeEmail(email);
+    final rawUser = _readLocalUser(normalizedEmail);
+    if (rawUser == null) {
+      throw const AppAuthException(
+        code: 'user-not-found',
+        message: 'Aucun compte trouvé pour cet email sur cet appareil.',
+      );
+    }
+    final user = AppAuthUser.fromJson(rawUser);
+    await _persistLocalUser(user, passwordHash: _hashPassword(newPassword));
   }
 
   Future<void> sendEmailVerification() async {

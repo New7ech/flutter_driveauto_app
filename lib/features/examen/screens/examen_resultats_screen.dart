@@ -1,11 +1,13 @@
 // DriveAuto — examen_resultats_screen.dart
 // Role : Score, verdict et correction détaillée — design premium
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../features/auth/controllers/auth_controller.dart';
 import '../../../providers/serie_provider.dart';
 
 class ExamenResultatsScreen extends ConsumerStatefulWidget {
@@ -21,6 +23,34 @@ class ExamenResultatsScreen extends ConsumerStatefulWidget {
 class _ExamenResultatsScreenState
     extends ConsumerState<ExamenResultatsScreen> {
   bool _afficherCorrection = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _saveResultToFirestore();
+  }
+
+  Future<void> _saveResultToFirestore() async {
+    try {
+      final user = ref.read(currentAuthUserProvider);
+      if (user == null) return;
+      final s = widget.examenState;
+      await FirebaseFirestore.instance.collection('resultats_examens').add({
+        'apprenantId': user.id,
+        'apprenantNom': user.displayName,
+        'score': s.nombreReponsesCorrectes,
+        'total': s.total,
+        'pourcentage': s.total == 0
+            ? 0.0
+            : (s.nombreReponsesCorrectes / s.total * 100)
+                .roundToDouble(),
+        'reussi': s.estRecu,
+        'datePassage': FieldValue.serverTimestamp(),
+      });
+    } catch (_) {
+      // Non bloquant — ne doit pas gêner l'affichage du résultat
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -180,6 +181,23 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
+  Future<bool> resetLocalPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await ref
+          .read(authServiceProvider)
+          .resetLocalPassword(email: email, newPassword: newPassword);
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(_handleAuthError(e), st);
+      return false;
+    }
+  }
+
   Future<bool> resendEmailVerification() async {
     state = const AsyncValue.loading();
     try {
@@ -254,6 +272,7 @@ class AuthController extends AsyncNotifier<void> {
 
   String _handleAuthError(dynamic e) {
     if (e is AppAuthException) {
+      if (e.code == 'local-mode-no-email') return 'local-mode';
       return e.message;
     }
 
@@ -274,6 +293,27 @@ class AuthController extends AsyncNotifier<void> {
           return 'Trop de tentatives. Reessayez dans quelques instants.';
         default:
           return 'Erreur d authentification: ${e.message}';
+      }
+    }
+
+    if (e is PlatformException) {
+      switch (e.code) {
+        case 'sign_in_canceled':
+        case 'aborted-by-user':
+          return 'Connexion Google annulée.';
+        case 'sign_in_failed':
+          final msg = e.message ?? '';
+          if (msg.contains('ApiException: 10')) {
+            return 'Connexion Google impossible : empreinte SHA-1 non enregistrée dans Firebase Console, ou la connexion Google n\'est pas activée dans Authentication > Méthodes de connexion.';
+          }
+          if (msg.contains('ApiException: 7')) {
+            return 'Connexion Google impossible : vérifiez votre connexion internet.';
+          }
+          return 'Connexion Google échouée. Vérifiez la configuration Firebase. ($msg)';
+        case 'network_error':
+          return 'Erreur réseau. Vérifiez votre connexion internet.';
+        default:
+          return 'Erreur Google Sign-In (${e.code}) : ${e.message}';
       }
     }
 
