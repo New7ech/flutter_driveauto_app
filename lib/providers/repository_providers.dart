@@ -61,7 +61,10 @@ final hiveSeriesBoxProvider = Provider<Box>((ref) {
   return Hive.box(AppConstants.hiveSeriesBox);
 });
 
-/// Fournit l'accès CRUD aux séries de cours (données locales persistées)
+/// Fournit l'accès CRUD aux séries de cours (Hive local + sync Firestore)
 final serieRepositoryProvider = Provider<SerieRepository>((ref) {
-  return SerieRepository(ref.watch(hiveSeriesBoxProvider));
+  return SerieRepository(
+    ref.watch(hiveSeriesBoxProvider),
+    firestore: ref.watch(firebaseFirestoreProvider),
+  );
 });

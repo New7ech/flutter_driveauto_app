@@ -49,7 +49,20 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final serie = ref.watch(serieByIdProvider(widget.serieId));
+    // Priorité : données Firestore (temps réel). Fallback : Hive local.
+    final remoteAsync = ref.watch(seriesRemoteProvider);
+    final localSerie = ref.watch(serieByIdProvider(widget.serieId));
+
+    if (remoteAsync.isLoading && localSerie == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final remoteSerie = remoteAsync.valueOrNull
+        ?.where((s) => s.id == widget.serieId)
+        .firstOrNull;
+    final serie = remoteSerie ?? localSerie;
 
     if (serie == null) {
       return Scaffold(

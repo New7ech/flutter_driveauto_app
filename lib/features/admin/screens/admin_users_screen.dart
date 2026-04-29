@@ -50,7 +50,7 @@ class AdminUsersScreen extends ConsumerStatefulWidget {
 class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  String _filterRole = 'tous'; // 'tous', 'apprenant', 'admin'
+  String _filterRole = 'tous'; // 'tous', 'apprenant', 'admin', 'pending'
 
   @override
   void dispose() {
@@ -61,18 +61,75 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   List<Map<String, dynamic>> _filtered(List<Map<String, dynamic>> users) {
     final q = _searchQuery.trim().toLowerCase();
     return users.where((u) {
-      final name =
-          (u['displayName'] as String? ?? '').toLowerCase();
+      final name = (u['displayName'] as String? ?? '').toLowerCase();
       final email = (u['email'] as String? ?? '').toLowerCase();
       final role = (u['role'] as String? ?? 'apprenant');
+      final approved = u['approved'] as bool? ?? true;
 
-      final matchSearch =
-          q.isEmpty || name.contains(q) || email.contains(q);
-      final matchRole =
-          _filterRole == 'tous' || role == _filterRole;
+      final matchSearch = q.isEmpty || name.contains(q) || email.contains(q);
+      final matchRole = _filterRole == 'tous'
+          ? true
+          : _filterRole == 'pending'
+              ? (role == 'apprenant' && !approved)
+              : role == _filterRole;
 
       return matchSearch && matchRole;
     }).toList();
+  }
+
+  Future<void> _approveUser(Map<String, dynamic> user) async {
+    final uid = user['id'] as String? ?? user['uid'] as String? ?? '';
+    final name = user['displayName'] as String? ??
+        (user['email'] as String? ?? '').split('@').first;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Approuver l\'apprenant'),
+        content: Text('Voulez-vous approuver "$name" ?\n\n'
+            'Il pourra accéder à l\'application immédiatement.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: AppConstants.primaryColor),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Approuver'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({'approved': true, 'updatedAt': FieldValue.serverTimestamp()});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name approuvé avec succès.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppConstants.primaryColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -92,6 +149,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
           final filtered = _filtered(users);
           final admins = users.where((u) => u['role'] == 'admin').length;
           final apprenants = users.length - admins;
+          final pending = users.where((u) {
+            final role = u['role'] as String? ?? 'apprenant';
+            final approved = u['approved'] as bool? ?? true;
+            return role == 'apprenant' && !approved;
+          }).length;
 
           return Column(
             children: [
@@ -119,6 +181,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                         label: 'Admins',
                         value: '$admins',
                         icon: Icons.admin_panel_settings),
+                    _StatMini(
+                        label: 'En attente',
+                        value: '$pending',
+                        icon: Icons.hourglass_top_rounded,
+                        color: const Color(0xFFF9A825)),
                   ],
                 ),
               ),
@@ -158,27 +225,38 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
               // ── Filtres par rôle ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    _FilterChip(
-                      label: 'Tous',
-                      selected: _filterRole == 'tous',
-                      onTap: () => setState(() => _filterRole = 'tous'),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Apprenants',
-                      selected: _filterRole == 'apprenant',
-                      onTap: () =>
-                          setState(() => _filterRole = 'apprenant'),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Admins',
-                      selected: _filterRole == 'admin',
-                      onTap: () => setState(() => _filterRole = 'admin'),
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'Tous',
+                        selected: _filterRole == 'tous',
+                        onTap: () => setState(() => _filterRole = 'tous'),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Apprenants',
+                        selected: _filterRole == 'apprenant',
+                        onTap: () =>
+                            setState(() => _filterRole = 'apprenant'),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Admins',
+                        selected: _filterRole == 'admin',
+                        onTap: () => setState(() => _filterRole = 'admin'),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'En attente${pending > 0 ? ' ($pending)' : ''}',
+                        selected: _filterRole == 'pending',
+                        color: const Color(0xFFF9A825),
+                        onTap: () =>
+                            setState(() => _filterRole = 'pending'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -199,6 +277,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                               _confirmDelete(context, filtered[index]),
                           onProgress: () =>
                               _showProgressDialog(context, filtered[index]),
+                          onApprove: () => _approveUser(filtered[index]),
                         ),
                       ),
               ),
@@ -337,8 +416,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         title: const Text('Supprimer l\'apprenant'),
         content: Text(
           'Voulez-vous supprimer "$name" ?\n\n'
-          'Son profil sera effacé définitivement. '
-          'Son compte Firebase Auth restera actif jusqu\'à la prochaine connexion.',
+          'Son profil sera effacé définitivement et il sera '
+          'automatiquement déconnecté de l\'application.',
         ),
         actions: [
           TextButton(

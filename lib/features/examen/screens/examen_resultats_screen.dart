@@ -306,7 +306,10 @@ class _ExamenResultatsScreenState
             onPressed: () {
               ref
                   .read(examenProvider.notifier)
-                  .reinitialiser(ref.read(seriesProvider));
+                  .reinitialiser(
+                    ref.read(seriesRemoteProvider).valueOrNull ??
+                        ref.read(seriesProvider),
+                  );
               context.go('/dashboard');
             },
           ),
@@ -337,7 +340,10 @@ class _ExamenResultatsScreenState
                 onTap: () {
                   ref
                       .read(examenProvider.notifier)
-                      .reinitialiser(ref.read(seriesProvider));
+                      .reinitialiser(
+                    ref.read(seriesRemoteProvider).valueOrNull ??
+                        ref.read(seriesProvider),
+                  );
                   context.go('/examen');
                 },
                 child: const Padding(

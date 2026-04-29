@@ -21,6 +21,8 @@ class UserRepository {
     required String provider,
     DateTime? createdAt,
     DateTime? lastLoginAt,
+    // null = ne pas écrire le champ (merge préserve la valeur existante)
+    bool? approved,
   }) async {
     try {
       final firestore = _firestore;
@@ -35,6 +37,7 @@ class UserRepository {
         'provider': provider,
         if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt),
         if (lastLoginAt != null) 'lastLoginAt': Timestamp.fromDate(lastLoginAt),
+        'approved': ?approved,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {

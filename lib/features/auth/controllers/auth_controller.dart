@@ -17,6 +17,36 @@ import '../../../providers/repository_providers.dart';
 import '../models/app_auth_user.dart';
 import '../services/auth_service.dart';
 
+// Surveille le doc Firestore de l'utilisateur connecté.
+// Émet false quand l'admin supprime son profil → déclenche la déconnexion.
+final userDeletionWatcherProvider = StreamProvider<bool>((ref) {
+  final user = ref.watch(currentAuthUserProvider);
+  final firestore = ref.watch(firebaseFirestoreProvider);
+  if (user == null || firestore == null) return const Stream.empty();
+  return firestore
+      .collection('users')
+      .doc(user.id)
+      .snapshots()
+      .map((snap) => snap.exists);
+});
+
+// Émet true quand le compte est approuvé par l'admin.
+// Les admins et le mode local sont toujours considérés comme approuvés.
+final userApprovalProvider = StreamProvider<bool>((ref) {
+  final user = ref.watch(currentAuthUserProvider);
+  final firestore = ref.watch(firebaseFirestoreProvider);
+
+  if (user == null) return const Stream.empty();
+  if (user.role == 'admin') return Stream.value(true);
+  if (firestore == null) return Stream.value(true); // mode local : pas de validation
+
+  return firestore
+      .collection('users')
+      .doc(user.id)
+      .snapshots()
+      .map((snap) => snap.data()?['approved'] as bool? ?? false);
+});
+
 final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
   if (Firebase.apps.isEmpty) {
     return null;
@@ -125,7 +155,7 @@ class AuthController extends AsyncNotifier<void> {
           .read(authServiceProvider)
           .register(displayName: displayName, email: email, password: password);
 
-      await _syncUserProfile(user);
+      await _syncUserProfile(user, isNewUser: true);
       await _sendVerificationEmailIfPossible();
       _subscribeToTopics();
       state = const AsyncValue.data(null);
@@ -238,7 +268,7 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
-  Future<void> _syncUserProfile(AppAuthUser user) async {
+  Future<void> _syncUserProfile(AppAuthUser user, {bool isNewUser = false}) async {
     try {
       await ref
           .read(userRepositoryProvider)
@@ -251,6 +281,8 @@ class AuthController extends AsyncNotifier<void> {
             provider: user.provider,
             createdAt: user.createdAt,
             lastLoginAt: user.lastLoginAt,
+            // Lors de l'inscription : pending. Lors du login : merge préserve la valeur existante.
+            approved: isNewUser ? false : null,
           );
     } catch (_) {
       // Le profil ne doit pas bloquer l'authentification si Firestore est indisponible.

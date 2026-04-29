@@ -14,8 +14,27 @@ class SeriesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final series = ref.watch(seriesProvider);
+    final seriesAsync = ref.watch(seriesRemoteProvider);
 
+    return seriesAsync.when(
+      loading: () => Scaffold(
+        appBar: AppBar(
+          title: const Text('Cours — Séries'),
+          backgroundColor: AppConstants.primaryColor,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, st) {
+        // Fallback sur les données locales en cas d'erreur réseau
+        final series = ref.watch(seriesProvider);
+        return _buildContent(context, series);
+      },
+      data: (series) => _buildContent(context, series),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, List<Serie> series) {
     return Scaffold(
       body: series.isEmpty
           ? _buildEmpty(context)

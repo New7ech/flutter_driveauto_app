@@ -1,9 +1,11 @@
 // DriveAuto — serie_repository.dart
-// Role : CRUD des series et diapositives avec persistence Hive.
+// Role : CRUD des series et diapositives avec persistence Hive + sync Firestore.
 // Les donnees statiques de CoursData servent de seed au premier lancement.
 
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../data/local/cours_data.dart';
@@ -11,11 +13,44 @@ import '../../domain/models/serie.dart';
 
 class SerieRepository {
   static const String _key = 'series_v1';
+  static const String _collection = 'series';
 
   final Box _box;
+  final FirebaseFirestore? _firestore;
 
-  SerieRepository(this._box) {
+  SerieRepository(this._box, {FirebaseFirestore? firestore})
+      : _firestore = firestore {
     _seedIfNeeded();
+    _seedFirestoreIfNeeded();
+  }
+
+  // ── Stream temps réel (Firestore) ou réactif Hive ───────────────
+  // Utilisé par les apprenants pour voir les contenus mis à jour par l'admin.
+
+  Stream<List<Serie>> getSeriesStream() {
+    final fs = _firestore;
+    if (fs == null) {
+      // Stream réactif local : émet l'état courant puis se met à jour à chaque
+      // écriture dans Hive (ex. modifications admin sur le même appareil).
+      final controller = StreamController<List<Serie>>();
+      controller.add(getAllSeries());
+      final sub = _box.watch(key: _key).listen((_) {
+        if (!controller.isClosed) controller.add(getAllSeries());
+      });
+      controller.onCancel = () => sub.cancel();
+      return controller.stream;
+    }
+    return fs.collection(_collection).snapshots().map((snap) {
+      if (snap.docs.isEmpty) return CoursData.series;
+      try {
+        return snap.docs
+            .map((doc) => _serieFromMap(doc.data()))
+            .toList()
+          ..sort((a, b) => a.id.compareTo(b.id));
+      } catch (_) {
+        return CoursData.series;
+      }
+    });
   }
 
   // ── Lecture ──────────────────────────────────────────────────────
@@ -48,11 +83,21 @@ class SerieRepository {
       all.add(serie);
     }
     await _persist(all);
+    await _firestore
+        ?.collection(_collection)
+        .doc(serie.id)
+        .set(_serieToMap(serie))
+        .catchError((_) {});
   }
 
   Future<void> deleteSerie(String id) async {
     final all = getAllSeries()..removeWhere((s) => s.id == id);
     await _persist(all);
+    await _firestore
+        ?.collection(_collection)
+        .doc(id)
+        .delete()
+        .catchError((_) {});
   }
 
   Future<void> saveDiapositive(String serieId, Diapositive diapo) async {
@@ -81,6 +126,11 @@ class SerieRepository {
       diapositives: sorted,
     );
     await _persist(all);
+    await _firestore
+        ?.collection(_collection)
+        .doc(serieId)
+        .set(_serieToMap(all[idx]))
+        .catchError((_) {});
   }
 
   Future<void> deleteDiapositive(String serieId, String diapoId) async {
@@ -102,11 +152,27 @@ class SerieRepository {
       diapositives: slides,
     );
     await _persist(all);
+    await _firestore
+        ?.collection(_collection)
+        .doc(serieId)
+        .set(_serieToMap(all[idx]))
+        .catchError((_) {});
   }
 
-  /// Remet les donnees par defaut (CoursData.series).
+  /// Remet les donnees par defaut (CoursData.series) — local + Firestore.
   Future<void> resetToDefaults() async {
     await _persist(CoursData.series);
+    final fs = _firestore;
+    if (fs != null) {
+      final batch = fs.batch();
+      for (final serie in CoursData.series) {
+        batch.set(
+          fs.collection(_collection).doc(serie.id),
+          _serieToMap(serie),
+        );
+      }
+      await batch.commit().catchError((_) {});
+    }
   }
 
   // ── Persistence interne ──────────────────────────────────────────
@@ -117,6 +183,28 @@ class SerieRepository {
         _key,
         jsonEncode(CoursData.series.map(_serieToMap).toList()),
       );
+    }
+  }
+
+  // Pousse les données par défaut dans Firestore si la collection est vide.
+  // Fire-and-forget : les erreurs réseau sont ignorées.
+  void _seedFirestoreIfNeeded() async {
+    final fs = _firestore;
+    if (fs == null) return;
+    try {
+      final snap = await fs.collection(_collection).limit(1).get();
+      if (snap.docs.isEmpty) {
+        final batch = fs.batch();
+        for (final serie in CoursData.series) {
+          batch.set(
+            fs.collection(_collection).doc(serie.id),
+            _serieToMap(serie),
+          );
+        }
+        await batch.commit();
+      }
+    } catch (_) {
+      // Silently fail — offline or Firestore rules not yet configured
     }
   }
 

@@ -59,6 +59,19 @@ final seriesProvider = Provider<List<Serie>>((ref) {
   return ref.watch(seriesNotifierProvider);
 });
 
+/// Stream temps réel depuis Firestore — utilisé par les apprenants.
+/// Redémarre à chaque modification locale (admin même appareil) grâce à la
+/// dépendance sur [seriesNotifierProvider], et réagit aux changements
+/// distants via le stream Firestore.
+final seriesRemoteProvider = StreamProvider<List<Serie>>((ref) {
+  // Dépendance explicite : quand l'admin sauvegarde, le notifier change
+  // → ce provider est invalidé → getSeriesStream() est rappelé avec les
+  // données fraîches (Hive déjà mis à jour par reload()).
+  ref.watch(seriesNotifierProvider);
+  final repo = ref.watch(serieRepositoryProvider);
+  return repo.getSeriesStream();
+});
+
 /// Récupère une série par son ID. Retourne null si introuvable.
 final serieByIdProvider = Provider.family<Serie?, String>((ref, id) {
   return ref.watch(seriesProvider).where((s) => s.id == id).firstOrNull;

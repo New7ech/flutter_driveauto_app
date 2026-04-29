@@ -196,7 +196,10 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
   // ────────────────────────────────────────────────────────────────────
 
   Widget _buildStartPage(BuildContext context) {
-    final series = ref.watch(seriesProvider);
+    // Données Firestore en priorité, fallback sur le cache local Hive.
+    final remoteAsync = ref.watch(seriesRemoteProvider);
+    final localSeries = ref.watch(seriesProvider);
+    final series = remoteAsync.valueOrNull ?? localSeries;
     final totalQuestions = series
         .expand((s) => s.diapositives)
         .where((d) => d.aUneQuestion)

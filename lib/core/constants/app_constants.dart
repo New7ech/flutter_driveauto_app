@@ -37,6 +37,9 @@ class AppConstants {
   static const String routeExamen = '/examen';
   static const String routeExamenResultats = '/examen/resultats';
 
+  // Approbation admin
+  static const String routePendingApproval = '/pending-approval';
+
   // Noms de boites Hive (cache)
   static const String hiveLeconsBox = 'lecons_box';
   static const String hiveQuizzesBox = 'quizzes_box';

@@ -23,6 +23,7 @@ import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/screens/auth_loading_screen.dart';
 import 'features/auth/screens/forgot_password_screen.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/pending_approval_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/courses/screens/course_detail_screen.dart';
 import 'features/courses/screens/courses_list_screen.dart';
@@ -89,6 +90,20 @@ class DriveAutoApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Déconnexion automatique si l'admin supprime le profil de l'apprenant.
+    // On détecte la transition exists:true → exists:false pour éviter les
+    // faux positifs juste après l'inscription (doc pas encore créé).
+    ref.listen<AsyncValue<bool>>(
+      userDeletionWatcherProvider,
+      (previous, next) {
+        final wasExisting = previous?.valueOrNull;
+        final isExisting = next.valueOrNull;
+        if (wasExisting == true && isExisting == false) {
+          ref.read(authControllerProvider.notifier).logout();
+        }
+      },
+    );
+
     ref.listen(connectivityProvider, (previous, next) {
       if (!next.hasValue) {
         return;
@@ -136,6 +151,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final currentUser = ref.watch(currentAuthUserProvider);
   final landingRoute = ref.watch(authLandingRouteProvider);
+  final approvalStatus = ref.watch(userApprovalProvider);
 
   const publicRoutes = <String>{
     AppConstants.routeAuthLoading,
@@ -151,30 +167,46 @@ final routerProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
       final isPublicRoute = publicRoutes.contains(location);
       final isLoadingRoute = location == AppConstants.routeAuthLoading;
+      final isPendingRoute = location == AppConstants.routePendingApproval;
       final isAuthenticated = currentUser != null;
-      final authenticatedUser = currentUser;
+      final isApprenant = currentUser?.role == 'apprenant';
       final isAdminRoute = location == AppConstants.routeAdmin;
 
-      if (authState.isLoading) {
+      // 1. Auth en cours de chargement, ou approbation en cours pour un apprenant.
+      if (authState.isLoading ||
+          (isAuthenticated && isApprenant && approvalStatus.isLoading)) {
         return isLoadingRoute ? null : AppConstants.routeAuthLoading;
       }
 
-      // Auth résolue : quitter l'écran de chargement dans tous les cas.
-      if (isLoadingRoute) {
-        return isAuthenticated ? landingRoute : AppConstants.routeLogin;
-      }
-
+      // 2. Non authentifié.
       if (!isAuthenticated) {
         return isPublicRoute ? null : AppConstants.routeLogin;
       }
 
-      if (isPublicRoute) {
+      // 3. Authentifié sur une route publique ou l'écran de chargement.
+      if (isPublicRoute || isLoadingRoute) {
+        if (isApprenant) {
+          final approved = approvalStatus.valueOrNull ?? false;
+          return approved ? landingRoute : AppConstants.routePendingApproval;
+        }
         return landingRoute;
       }
 
-      if (isAdminRoute &&
-          authenticatedUser != null &&
-          authenticatedUser.role != 'admin') {
+      // 4. Apprenant non approuvé : forcer vers l'écran d'attente.
+      if (isApprenant) {
+        final approved = approvalStatus.valueOrNull ?? false;
+        if (!approved) {
+          return isPendingRoute ? null : AppConstants.routePendingApproval;
+        }
+        // Apprenant approuvé sur l'écran d'attente → dashboard.
+        if (isPendingRoute) return landingRoute;
+      }
+
+      // 5. L'écran d'attente est réservé aux apprenants non approuvés.
+      if (isPendingRoute) return landingRoute;
+
+      // 6. Protection de la route admin.
+      if (isAdminRoute && currentUser.role != 'admin') {
         return AppConstants.routeDashboard;
       }
 
@@ -306,6 +338,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+      GoRoute(
+        path: AppConstants.routePendingApproval,
+        builder: (context, state) => const PendingApprovalScreen(),
       ),
       GoRoute(
         path: AppConstants.routeAdmin,
