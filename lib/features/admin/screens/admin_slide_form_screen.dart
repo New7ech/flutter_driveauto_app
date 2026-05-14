@@ -245,10 +245,84 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     final extension = _fileExtension(fileName);
     final storagePath =
         'series/${widget.serieId}/diapositives/$diapoId/${DateTime.now().millisecondsSinceEpoch}$extension';
-    final ref = FirebaseStorage.instance.ref().child(storagePath);
     final metadata = SettableMetadata(contentType: _contentType(fileName));
-    final snapshot = await ref.putData(bytes, metadata);
-    return snapshot.ref.fullPath;
+    return _uploadToAvailableBucket(storagePath, bytes, metadata);
+  }
+
+  Future<String> _uploadToAvailableBucket(
+    String storagePath,
+    Uint8List bytes,
+    SettableMetadata metadata,
+  ) async {
+    final app = Firebase.app();
+    final buckets = _candidateStorageBuckets(app);
+    FirebaseException? lastStorageError;
+
+    for (final bucket in buckets) {
+      try {
+        final storage = bucket == null
+            ? FirebaseStorage.instance
+            : FirebaseStorage.instanceFor(app: app, bucket: bucket);
+        final storageRef = storage.ref().child(storagePath);
+        final snapshot = await storageRef.putData(bytes, metadata);
+        return await _downloadUrlWithRetry(snapshot.ref);
+      } on FirebaseException catch (error) {
+        if (error.plugin != 'firebase_storage') rethrow;
+        lastStorageError = error;
+        if (!_shouldTryNextStorageBucket(error)) rethrow;
+      }
+    }
+
+    if (lastStorageError != null) throw lastStorageError;
+    throw const _SlideImageException(
+      "Aucun bucket Firebase Storage n'est configuré pour envoyer l'image.",
+    );
+  }
+
+  List<String?> _candidateStorageBuckets(FirebaseApp app) {
+    final projectId = app.options.projectId;
+    final configured = app.options.storageBucket?.trim();
+    final values = <String?>[null];
+
+    void addBucket(String? bucket) {
+      final value = bucket?.trim();
+      if (value == null || value.isEmpty) return;
+      if (!values.contains(value)) values.add(value);
+    }
+
+    addBucket(configured);
+    if (projectId.isNotEmpty) {
+      addBucket('$projectId.firebasestorage.app');
+      addBucket('$projectId.appspot.com');
+    }
+
+    return values;
+  }
+
+  bool _shouldTryNextStorageBucket(FirebaseException error) {
+    return error.code == 'object-not-found' || error.code == 'bucket-not-found';
+  }
+
+  Future<String> _downloadUrlWithRetry(Reference ref) async {
+    FirebaseException? lastError;
+
+    for (var attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await ref.getDownloadURL();
+      } on FirebaseException catch (error) {
+        if (error.plugin != 'firebase_storage' ||
+            error.code != 'object-not-found') {
+          rethrow;
+        }
+        lastError = error;
+        await Future<void>.delayed(Duration(milliseconds: 250 * (attempt + 1)));
+      }
+    }
+
+    if (lastError != null) throw lastError;
+    throw const _SlideImageException(
+      "L'image a été envoyée, mais son URL publique n'a pas pu être récupérée.",
+    );
   }
 
   Future<void> _ensureStorageUploadAllowed() async {
