@@ -788,7 +788,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
           case 'unauthorized':
             return "Upload refusé par Firebase Storage. Vérifiez que storage.rules est déployé et que votre document users/${FirebaseAuth.instance.currentUser?.uid ?? '<uid>'} contient role: admin.";
           case 'bucket-not-found':
-            return 'Bucket Firebase Storage introuvable. Activez Storage dans le projet Firebase.';
+            return "Bucket Firebase Storage introuvable. Allez dans la console Firebase, onglet 'Storage', et cliquez sur 'Commencer' pour l'activer.";
           case 'quota-exceeded':
             return 'Quota Firebase Storage dépassé.';
           case 'retry-limit-exceeded':
@@ -796,7 +796,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
           case 'canceled':
             return "L'envoi de l'image a été annulé.";
           case 'object-not-found':
-            return "L'objet Firebase Storage indiqué n'existe pas. Rechoisissez l'image puis enregistrez à nouveau.";
+            return "Image introuvable ou Storage non activé. Vérifiez que l'onglet 'Storage' est activé dans la console Firebase, puis réessayez.";
           default:
             return 'Erreur Firebase Storage ${error.code}$suffix';
         }
