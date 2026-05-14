@@ -1,6 +1,7 @@
 // DriveAuto — slide_viewer_screen.dart
 // Role : Visionneuse de diapositives avec exercices intégrés — design premium
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
@@ -249,6 +250,23 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
       return _buildImagePlaceholder(diapo, couleur);
     }
 
+    if (_isBase64Image(source)) {
+      try {
+        final b64 = source.substring(source.indexOf(',') + 1);
+        return _wrapSlideImage(
+          Image.memory(
+            base64Decode(b64),
+            height: 220,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
+          ),
+        );
+      } catch (_) {
+        return _buildImagePlaceholder(diapo, couleur);
+      }
+    }
+
     if (_isHttpUrl(source)) {
       return _wrapSlideImage(_buildNetworkImage(source, diapo, couleur));
     }
@@ -293,6 +311,10 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
         errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
       ),
     );
+  }
+
+  bool _isBase64Image(String source) {
+    return source.startsWith('data:image/');
   }
 
   bool _isHttpUrl(String source) {

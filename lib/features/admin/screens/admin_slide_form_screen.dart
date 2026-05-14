@@ -1,11 +1,10 @@
 // DriveAuto — admin_slide_form_screen.dart
 // Role : Formulaire de creation / edition d'une diapositive avec question integree
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +14,6 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../data/repositories/serie_repository.dart';
 import '../../../domain/models/serie.dart';
-import '../../../providers/repository_providers.dart';
 import '../../../providers/serie_provider.dart';
 
 class _SlideImageException implements Exception {
@@ -52,6 +50,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
   late TextEditingController _ordreCtrl;
   late TextEditingController _questionTexteCtrl;
   late TextEditingController _explicationCtrl;
+  late TextEditingController _imageUrlCtrl;
   final List<TextEditingController> _optionsCtrls = [];
   final Set<int> _reponsesCorrectes = {};
 
@@ -80,6 +79,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     _explicationCtrl = TextEditingController(
       text: d?.question?.explication ?? '',
     );
+    _imageUrlCtrl = TextEditingController(text: d?.imagePath ?? '');
     _imageUrl = d?.imagePath;
 
     if (d?.question != null) {
@@ -109,6 +109,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
       _ordreCtrl,
       _questionTexteCtrl,
       _explicationCtrl,
+      _imageUrlCtrl,
     ]) {
       c.dispose();
     }
@@ -187,41 +188,27 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
   }
 
   Future<String?> _uploadImage(String diapoId) async {
-    final existingImage = _imageUrl?.trim();
+    final existingImage = _imageUrlCtrl.text.trim();
     if (_imageFile == null) {
-      if (existingImage == null || existingImage.isEmpty) return null;
-      if (_isLocalFilePath(existingImage)) {
-        if (kIsWeb) return existingImage;
-        final file = File(existingImage);
-        if (await file.exists()) {
-          setState(() => _isUploadingImage = true);
-          try {
-            final fileName = existingImage
-                .split(RegExp(r'[\\/]'))
-                .where((part) => part.isNotEmpty)
-                .lastOrNull;
-            return _uploadImageBytes(
-              diapoId,
-              await file.readAsBytes(),
-              fileName ?? 'slide.jpg',
-            );
-          } finally {
-            if (mounted) {
-              setState(() => _isUploadingImage = false);
-            }
-          }
-        }
-      }
+      if (existingImage.isEmpty) return null;
+      // If it's an http link or a reference, return it as is
       return existingImage;
     }
 
     setState(() => _isUploadingImage = true);
     try {
-      final fileName = _imageFile!.name.isNotEmpty
-          ? _imageFile!.name
-          : _imageFile!.path.split(Platform.pathSeparator).last;
       final bytes = await _imageFile!.readAsBytes();
-      return _uploadImageBytes(diapoId, bytes, fileName);
+      final kbSize = bytes.length / 1024;
+      
+      // Limite de 700 Ko pour le stockage direct en base64 (limite Firestore ~1Mo)
+      if (kbSize > 700) {
+        throw _SlideImageException(
+          "L'image fait ${kbSize.toStringAsFixed(1)} Ko. La limite est de 700 Ko sans Firebase Storage. Veuillez choisir une image plus petite ou coller un lien web.",
+        );
+      }
+      
+      final base64String = base64Encode(bytes);
+      return 'data:image/png;base64,$base64String';
     } finally {
       if (mounted) {
         setState(() => _isUploadingImage = false);
@@ -229,150 +216,6 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     }
   }
 
-  Future<String> _uploadImageBytes(
-    String diapoId,
-    Uint8List bytes,
-    String fileName,
-  ) async {
-    if (bytes.isEmpty) {
-      throw const _SlideImageException(
-        'Le fichier image sélectionné est vide.',
-      );
-    }
-
-    await _ensureStorageUploadAllowed();
-
-    final extension = _fileExtension(fileName);
-    final storagePath =
-        'series/${widget.serieId}/diapositives/$diapoId/${DateTime.now().millisecondsSinceEpoch}$extension';
-    final metadata = SettableMetadata(contentType: _contentType(fileName));
-    return _uploadToAvailableBucket(storagePath, bytes, metadata);
-  }
-
-  Future<String> _uploadToAvailableBucket(
-    String storagePath,
-    Uint8List bytes,
-    SettableMetadata metadata,
-  ) async {
-    final app = Firebase.app();
-    final buckets = _candidateStorageBuckets(app);
-    FirebaseException? lastStorageError;
-
-    for (final bucket in buckets) {
-      try {
-        final storage = bucket == null
-            ? FirebaseStorage.instance
-            : FirebaseStorage.instanceFor(app: app, bucket: bucket);
-        final storageRef = storage.ref().child(storagePath);
-        final snapshot = await storageRef.putData(bytes, metadata);
-        return await _downloadUrlWithRetry(snapshot.ref);
-      } on FirebaseException catch (error) {
-        if (error.plugin != 'firebase_storage') rethrow;
-        lastStorageError = error;
-        if (!_shouldTryNextStorageBucket(error)) rethrow;
-      }
-    }
-
-    if (lastStorageError != null) throw lastStorageError;
-    throw const _SlideImageException(
-      "Aucun bucket Firebase Storage n'est configuré pour envoyer l'image.",
-    );
-  }
-
-  List<String?> _candidateStorageBuckets(FirebaseApp app) {
-    final projectId = app.options.projectId;
-    final configured = app.options.storageBucket?.trim();
-    final values = <String?>[null];
-
-    void addBucket(String? bucket) {
-      final value = bucket?.trim();
-      if (value == null || value.isEmpty) return;
-      if (!values.contains(value)) values.add(value);
-    }
-
-    addBucket(configured);
-    if (projectId.isNotEmpty) {
-      addBucket('$projectId.firebasestorage.app');
-      addBucket('$projectId.appspot.com');
-    }
-
-    return values;
-  }
-
-  bool _shouldTryNextStorageBucket(FirebaseException error) {
-    return error.code == 'object-not-found' || error.code == 'bucket-not-found';
-  }
-
-  Future<String> _downloadUrlWithRetry(Reference ref) async {
-    FirebaseException? lastError;
-
-    for (var attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        return await ref.getDownloadURL();
-      } on FirebaseException catch (error) {
-        if (error.plugin != 'firebase_storage' ||
-            error.code != 'object-not-found') {
-          rethrow;
-        }
-        lastError = error;
-        await Future<void>.delayed(Duration(milliseconds: 250 * (attempt + 1)));
-      }
-    }
-
-    if (lastError != null) throw lastError;
-    throw const _SlideImageException(
-      "L'image a été envoyée, mais son URL publique n'a pas pu être récupérée.",
-    );
-  }
-
-  Future<void> _ensureStorageUploadAllowed() async {
-    if (Firebase.apps.isEmpty) {
-      throw const _SlideImageException(
-        "Firebase n'est pas initialisé. Vérifiez la configuration Firebase de l'application.",
-      );
-    }
-
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) {
-      throw const _SlideImageException(
-        "Aucun utilisateur Firebase connecté. Déconnectez-vous puis reconnectez-vous en admin.",
-      );
-    }
-
-    final firestore = ref.read(firebaseFirestoreProvider);
-    if (firestore == null) {
-      throw const _SlideImageException(
-        "Firestore n'est pas disponible. Impossible de verifier le role administrateur.",
-      );
-    }
-
-    final userDoc = firestore.collection('users').doc(firebaseUser.uid);
-    final snapshot = await userDoc.get();
-    final currentRole = snapshot.data()?['role'] as String?;
-    if (currentRole == 'admin') return;
-
-    throw _SlideImageException(
-      "Seul un compte administrateur peut envoyer une image de slide. "
-      "Dans Firestore, le document users/${firebaseUser.uid} doit contenir role: admin.",
-    );
-  }
-
-  String _fileExtension(String fileName) {
-    final index = fileName.lastIndexOf('.');
-    if (index < 0 || index == fileName.length - 1) return '.jpg';
-    return fileName.substring(index).toLowerCase();
-  }
-
-  String _contentType(String fileName) {
-    final ext = _fileExtension(fileName);
-    return switch (ext) {
-      '.png' => 'image/png',
-      '.webp' => 'image/webp',
-      '.gif' => 'image/gif',
-      '.bmp' => 'image/bmp',
-      _ => 'image/jpeg',
-    };
-  }
 
   bool _isHttpUrl(String source) {
     return source.startsWith('http://') || source.startsWith('https://');
@@ -635,6 +478,34 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
             ),
             onPressed: isBusy ? null : _pickImage,
           ),
+          const SizedBox(height: 12),
+          const Row(
+            children: [
+              Expanded(child: Divider()),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text('OU', style: TextStyle(color: Colors.grey)),
+              ),
+              Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _imageUrlCtrl,
+            decoration: const InputDecoration(
+              labelText: "Lien de l'image (Ex: https://...)",
+              hintText: "Collez l'URL d'une image hébergée sur internet",
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.link),
+            ),
+            keyboardType: TextInputType.url,
+            onChanged: (val) {
+              setState(() {
+                _imageUrl = val;
+                _imageFile = null;
+              });
+            },
+          ),
         ],
       ],
     );
@@ -722,6 +593,19 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
   }
 
   Widget _buildStoredImagePreview(String source) {
+    if (source.startsWith('data:image/')) {
+      try {
+        final b64 = source.substring(source.indexOf(',') + 1);
+        return Image.memory(
+          base64Decode(b64),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildPickerPlaceholder(),
+        );
+      } catch (_) {
+        return _buildPickerPlaceholder();
+      }
+    }
+
     if (_isHttpUrl(source)) {
       return Image.network(
         source,
