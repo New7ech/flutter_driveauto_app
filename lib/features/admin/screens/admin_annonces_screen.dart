@@ -10,16 +10,17 @@ const _kAdminPrimary = Color(0xFF7B1FA2);
 
 // ── Provider Firestore ────────────────────────────────────────────────────────
 
-final _annoncesColl =
-    FirebaseFirestore.instance.collection('annonces');
+final _annoncesColl = FirebaseFirestore.instance.collection('annonces');
 
 Stream<List<Map<String, dynamic>>> _annoncesStream() {
   return _annoncesColl
       .orderBy('dateCreation', descending: true)
       .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-          .toList());
+      .map(
+        (snap) => snap.docs
+            .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+            .toList(),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,11 +48,13 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return const SliverToBoxAdapter(
-                      child: Center(child: CircularProgressIndicator()));
+                    child: Center(child: CircularProgressIndicator()),
+                  );
                 }
                 if (snap.hasError) {
                   return SliverToBoxAdapter(
-                      child: Center(child: Text('Erreur : ${snap.error}')));
+                    child: Center(child: Text('Erreur : ${snap.error}')),
+                  );
                 }
                 final annonces = snap.data ?? [];
                 if (annonces.isEmpty) {
@@ -109,16 +112,19 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Text(
                     'Annonces',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -127,7 +133,10 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
                 child: Text(
                   'Rédigez et publiez des annonces visibles\npar tous vos apprenants.',
                   style: TextStyle(
-                      color: Colors.white70, fontSize: 13, height: 1.5),
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -148,13 +157,17 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
               color: Colors.orange.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.campaign_outlined,
-                size: 48, color: Colors.orange.shade700),
+            child: Icon(
+              Icons.campaign_outlined,
+              size: 48,
+              color: Colors.orange.shade700,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('Aucune annonce',
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            'Aucune annonce',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 8),
           Text(
             'Créez votre première annonce\npour informer vos apprenants.',
@@ -181,8 +194,7 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
     );
   }
 
-  Future<void> _sauvegarder(
-      Map<String, dynamic> data, String? id) async {
+  Future<void> _sauvegarder(Map<String, dynamic> data, String? id) async {
     try {
       if (id != null) {
         await _annoncesColl.doc(id).update(data);
@@ -196,8 +208,9 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(id != null ? 'Annonce modifiée.' : 'Annonce publiée !'),
+            content: Text(
+              id != null ? 'Annonce modifiée.' : 'Annonce publiée !',
+            ),
             backgroundColor: Colors.orange.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -207,28 +220,33 @@ class _AdminAnnoncesScreenState extends State<AdminAnnoncesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Erreur : $e'),
-              backgroundColor: Colors.red.shade700,
-              behavior: SnackBarBehavior.floating),
+            content: Text('Erreur : $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
   }
 
   Future<void> _supprimer(String id) async {
-    final ok = await showDialog<bool>(
+    final ok =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Text('Supprimer cette annonce ?'),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Annuler')),
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annuler'),
+              ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red.shade700),
+                  backgroundColor: Colors.red.shade700,
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Supprimer'),
               ),
@@ -340,14 +358,18 @@ class _AnnonceCard extends StatelessWidget {
                       Text(
                         _titre,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (dc != null)
                         Text(
                           'Publié le ${dc.day.toString().padLeft(2, '0')}/${dc.month.toString().padLeft(2, '0')}/${dc.year}',
                           style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                     ],
                   ),
@@ -355,7 +377,9 @@ class _AnnonceCard extends StatelessWidget {
                 // Badge priorité
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 9, vertical: 3),
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: _prioriteColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -376,9 +400,10 @@ class _AnnonceCard extends StatelessWidget {
               Text(
                 _contenu,
                 style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade600,
-                    height: 1.4),
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -420,8 +445,7 @@ class _AnnonceCard extends StatelessWidget {
                         foregroundColor: _active
                             ? Colors.orange.shade700
                             : Colors.green,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
                       onPressed: onToggle,
                       child: Text(_active ? 'Masquer' : 'Afficher'),
@@ -429,8 +453,7 @@ class _AnnonceCard extends StatelessWidget {
                     TextButton(
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.red.shade400,
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                       ),
                       onPressed: onDelete,
                       child: const Text('Supprimer'),
@@ -468,11 +491,12 @@ class _AnnonceFormState extends State<_AnnonceForm> {
   void initState() {
     super.initState();
     _titreCtrl = TextEditingController(
-        text: widget.existing?['titre'] as String? ?? '');
+      text: widget.existing?['titre'] as String? ?? '',
+    );
     _contenuCtrl = TextEditingController(
-        text: widget.existing?['contenu'] as String? ?? '');
-    _priorite =
-        widget.existing?['priorite'] as String? ?? 'normal';
+      text: widget.existing?['contenu'] as String? ?? '',
+    );
+    _priorite = widget.existing?['priorite'] as String? ?? 'normal';
   }
 
   @override
@@ -489,8 +513,7 @@ class _AnnonceFormState extends State<_AnnonceForm> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -522,8 +545,11 @@ class _AnnonceFormState extends State<_AnnonceForm> {
                     color: Colors.orange.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.campaign_rounded,
-                      color: Colors.orange.shade700, size: 20),
+                  child: Icon(
+                    Icons.campaign_rounded,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -531,14 +557,18 @@ class _AnnonceFormState extends State<_AnnonceForm> {
                       ? 'Modifier l\'annonce'
                       : 'Nouvelle annonce',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 17),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             // Priorité
-            const Text('Priorité',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const Text(
+              'Priorité',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -552,8 +582,7 @@ class _AnnonceFormState extends State<_AnnonceForm> {
                       onTap: () => setState(() => _priorite = p.$1),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        margin:
-                            const EdgeInsets.only(right: 8),
+                        margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
                           color: _priorite == p.$1
@@ -592,22 +621,25 @@ class _AnnonceFormState extends State<_AnnonceForm> {
               decoration: InputDecoration(
                 labelText: 'Titre *',
                 hintText: 'Ex : Fermeture exceptionnelle',
-                prefixIcon: const Icon(Icons.title_rounded,
-                    size: 18, color: _kAdminPrimary),
+                prefixIcon: const Icon(
+                  Icons.title_rounded,
+                  size: 18,
+                  color: _kAdminPrimary,
+                ),
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        BorderSide(color: Colors.grey.shade300)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        BorderSide(color: Colors.grey.shade300)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                        color: _kAdminPrimary, width: 2)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kAdminPrimary, width: 2),
+                ),
               ),
             ),
             const SizedBox(height: 14),
@@ -618,42 +650,46 @@ class _AnnonceFormState extends State<_AnnonceForm> {
               decoration: InputDecoration(
                 labelText: 'Contenu',
                 hintText: 'Ex : L\'auto-école sera fermée le samedi 3 mai...',
-                prefixIcon: const Icon(Icons.description_rounded,
-                    size: 18, color: _kAdminPrimary),
+                prefixIcon: const Icon(
+                  Icons.description_rounded,
+                  size: 18,
+                  color: _kAdminPrimary,
+                ),
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        BorderSide(color: Colors.grey.shade300)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        BorderSide(color: Colors.grey.shade300)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
                 focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                        color: _kAdminPrimary, width: 2)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kAdminPrimary, width: 2),
+                ),
               ),
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
               icon: const Icon(Icons.send_rounded, size: 18),
-              label: Text(widget.existing != null
-                  ? 'Enregistrer'
-                  : 'Publier l\'annonce'),
+              label: Text(
+                widget.existing != null ? 'Enregistrer' : 'Publier l\'annonce',
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.orange.shade700,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onPressed: _valid
                   ? () => widget.onSubmit({
-                        'titre': _titreCtrl.text.trim(),
-                        'contenu': _contenuCtrl.text.trim(),
-                        'priorite': _priorite,
-                      })
+                      'titre': _titreCtrl.text.trim(),
+                      'contenu': _contenuCtrl.text.trim(),
+                      'priorite': _priorite,
+                    })
                   : null,
             ),
           ],

@@ -46,12 +46,15 @@ class AdminStatsScreen extends StatelessWidget {
   }
 
   Widget _buildGlobalCards(BuildContext context) {
-    final avgSlidesPerSerie =
-        series.isEmpty ? 0.0 : totalSlides / series.length;
-    final avgQuestionsPerSerie =
-        series.isEmpty ? 0.0 : totalQuestions / series.length;
-    final coveragePercent =
-        totalSlides == 0 ? 0 : (totalQuestions * 100 ~/ totalSlides);
+    final avgSlidesPerSerie = series.isEmpty
+        ? 0.0
+        : totalSlides / series.length;
+    final avgQuestionsPerSerie = series.isEmpty
+        ? 0.0
+        : totalQuestions / series.length;
+    final coveragePercent = totalSlides == 0
+        ? 0
+        : (totalQuestions * 100 ~/ totalSlides);
 
     return Column(
       children: [
@@ -112,19 +115,19 @@ class AdminStatsScreen extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.orange.shade700,
-          ),
+        fontWeight: FontWeight.bold,
+        color: Colors.orange.shade700,
+      ),
     );
   }
 
   Widget _buildQuestionDistribution(BuildContext context) {
     final qcmCount = series.fold<int>(
       0,
-      (sum, s) => sum +
+      (sum, s) =>
+          sum +
           s.diapositives
-              .where((d) =>
-                  d.question?.type == TypeQuestion.qcm)
+              .where((d) => d.question?.type == TypeQuestion.qcm)
               .length,
     );
     final checklistCount = totalQuestions - qcmCount;
@@ -188,8 +191,10 @@ class _SerieStatCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
-                    child: Text(serie.emoji,
-                        style: const TextStyle(fontSize: 20)),
+                    child: Text(
+                      serie.emoji,
+                      style: const TextStyle(fontSize: 20),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -200,12 +205,16 @@ class _SerieStatCard extends StatelessWidget {
                       Text(
                         serie.titre,
                         style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 13),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                       Text(
                         serie.categorie,
                         style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade600),
+                          fontSize: 11,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -287,12 +296,14 @@ class _GlobalCard extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 18, color: color),
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: color,
+              ),
             ),
             Text(
               label,
-              style:
-                  TextStyle(fontSize: 10, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -305,8 +316,11 @@ class _GlobalCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _MiniStat extends StatelessWidget {
-  const _MiniStat(
-      {required this.label, required this.value, required this.color});
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -322,7 +336,10 @@ class _MiniStat extends StatelessWidget {
       child: Text(
         '$value $label',
         style: TextStyle(
-            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -353,9 +370,10 @@ class _DistributionRow extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 13)),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
             Text(
               '$count (${(fraction * 100).toStringAsFixed(0)}%)',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),

@@ -37,6 +37,10 @@ class _QuizActiveScreenState extends ConsumerState<QuizActiveScreen> {
     _timer?.cancel();
     _timeLeft = 30;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_timeLeft > 0) {
         setState(() {
           _timeLeft--;
@@ -89,7 +93,9 @@ class _QuizActiveScreenState extends ConsumerState<QuizActiveScreen> {
       }
     }
 
-    final score = (correctAnswers / widget.quiz.questions.length) * 100;
+    final score = widget.quiz.questions.isEmpty
+        ? 0.0
+        : (correctAnswers / widget.quiz.questions.length) * 100;
 
     // Le routing va vers les résultats en transmettant le score calculé et les réponses
     context.pushReplacement(
@@ -209,7 +215,7 @@ class _QuizActiveScreenState extends ConsumerState<QuizActiveScreen> {
                           width: isSelected ? 2 : 1,
                         ),
                         backgroundColor: isSelected
-                            ? AppConstants.primaryColor.withOpacity(0.1)
+                            ? AppConstants.primaryColor.withValues(alpha: 0.1)
                             : (isDark
                                   ? AppConstants.cardColorDark
                                   : Colors.white),

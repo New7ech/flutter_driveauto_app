@@ -46,4 +46,6 @@ class AppConstants {
   static const String hiveAuthUsersBox = 'auth_users_box';
   static const String hiveAuthSessionBox = 'auth_session_box';
   static const String hiveSeriesBox = 'series_box'; // Séries admin
+  static const String hiveSeriesProgressBox =
+      'series_progress_box'; // Progression des cours
 }

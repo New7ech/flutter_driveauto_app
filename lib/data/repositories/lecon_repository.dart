@@ -76,10 +76,7 @@ class LeconRepository {
   Future<void> saveLecon(Lecon lecon) async {
     try {
       if (_firestore != null) {
-        await _firestore
-            .collection('lecons')
-            .doc(lecon.id)
-            .set(lecon.toJson());
+        await _firestore.collection('lecons').doc(lecon.id).set(lecon.toJson());
       }
       await _box.put(lecon.id, lecon);
     } catch (e) {

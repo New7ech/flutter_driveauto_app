@@ -44,10 +44,7 @@ class ProgressCard extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: ringColor.withValues(alpha: 0.15),
-          width: 1,
-        ),
+        border: Border.all(color: ringColor.withValues(alpha: 0.15), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -69,8 +66,8 @@ class ProgressCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -103,9 +100,9 @@ class ProgressCard extends StatelessWidget {
                     Text(
                       '$percent%',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
                     ),
                   ],
                 ),
@@ -115,9 +112,9 @@ class ProgressCard extends StatelessWidget {
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade500,
-                    fontSize: 11,
-                  ),
+                color: Colors.grey.shade500,
+                fontSize: 11,
+              ),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
             ),

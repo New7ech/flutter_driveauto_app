@@ -188,8 +188,7 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's1_d6_q',
             type: TypeQuestion.qcm,
-            texte:
-                'Comment reconnaît-on facilement un panneau d\'obligation ?',
+            texte: 'Comment reconnaît-on facilement un panneau d\'obligation ?',
             options: [
               'Forme triangulaire, fond blanc',
               'Forme ronde, fond bleu',
@@ -547,7 +546,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's3_d5_q',
             type: TypeQuestion.qcm,
-            texte: 'Dans quel cas le dépassement est-il formellement interdit ?',
+            texte:
+                'Dans quel cas le dépassement est-il formellement interdit ?',
             options: [
               'Sur une route droite avec bonne visibilité',
               'Dans un virage et en haut d\'une côte',
@@ -581,12 +581,7 @@ class CoursData {
             type: TypeQuestion.qcm,
             texte:
                 'Quel est le taux d\'alcoolémie maximum autorisé pour un conducteur confirmé ?',
-            options: [
-              '0,2 g/L',
-              '0,5 g/L',
-              '0,8 g/L',
-              '1,0 g/L',
-            ],
+            options: ['0,2 g/L', '0,5 g/L', '0,8 g/L', '1,0 g/L'],
             reponsesCorrectes: [1],
             explication:
                 'Le taux légal pour un conducteur confirmé est de 0,5 g/L de sang. Pour les conducteurs novices, ce taux est abaissé à 0,2 g/L.',
@@ -641,7 +636,8 @@ class CoursData {
           serieId: 's4',
           ordre: 2,
           titre: 'Les zones d\'interdiction de stationnement',
-          imagePath: null, // TODO: 'assets/images/s4/interdictions_stationner.png'
+          imagePath:
+              null, // TODO: 'assets/images/s4/interdictions_stationner.png'
           contenu:
               'Il est INTERDIT de stationner dans les zones suivantes :\n\n'
               '❌ À moins de 5 m d\'une intersection ou d\'un carrefour\n'
@@ -681,7 +677,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's4_d3_q',
             type: TypeQuestion.qcm,
-            texte: 'Lors d\'un créneau, dans quel sens engage-t-on la manœuvre ?',
+            texte:
+                'Lors d\'un créneau, dans quel sens engage-t-on la manœuvre ?',
             options: [
               'En marche avant uniquement',
               'En marche arrière',
@@ -746,7 +743,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's4_d5_q',
             type: TypeQuestion.qcm,
-            texte: 'Que signifie une ligne continue blanche au centre de la route ?',
+            texte:
+                'Que signifie une ligne continue blanche au centre de la route ?',
             options: [
               'Dépassement autorisé',
               'Franchissement et dépassement INTERDITS',
@@ -777,7 +775,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's4_d6_q',
             type: TypeQuestion.qcm,
-            texte: 'Quel type de stationnement entraîne une mise en fourrière ?',
+            texte:
+                'Quel type de stationnement entraîne une mise en fourrière ?',
             options: [
               'Stationnement gênant uniquement',
               'Stationnement dangereux et abusif',
@@ -822,7 +821,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's5_d1_q',
             type: TypeQuestion.qcm,
-            texte: 'Quel est le bon ordre d\'action face à un accident (méthode P.A.S.) ?',
+            texte:
+                'Quel est le bon ordre d\'action face à un accident (méthode P.A.S.) ?',
             options: [
               'Secourir → Alerter → Protéger',
               'Alerter → Protéger → Secourir',
@@ -849,8 +849,7 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's5_d2_q',
             type: TypeQuestion.qcm,
-            texte:
-                'Pourquoi ne faut-il pas déplacer une victime d\'accident ?',
+            texte: 'Pourquoi ne faut-il pas déplacer une victime d\'accident ?',
             options: [
               'Pour ne pas salir les vêtements',
               'Cela est interdit par la loi dans tous les cas',
@@ -939,7 +938,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's5_d5_q',
             type: TypeQuestion.qcm,
-            texte: 'Que risque-t-on légalement en ne portant pas secours à une victime d\'accident ?',
+            texte:
+                'Que risque-t-on légalement en ne portant pas secours à une victime d\'accident ?',
             options: [
               'Rien, c\'est une question morale, pas légale',
               'Une simple amende administrative',
@@ -973,7 +973,8 @@ class CoursData {
           question: DiapositiveQuestion(
             id: 's5_d6_q',
             type: TypeQuestion.qcm,
-            texte: 'Dans quel délai doit-on envoyer le constat amiable à son assurance ?',
+            texte:
+                'Dans quel délai doit-on envoyer le constat amiable à son assurance ?',
             options: [
               '24 heures',
               '3 jours ouvrés',
@@ -983,6 +984,403 @@ class CoursData {
             reponsesCorrectes: [2],
             explication:
                 'Le constat amiable doit être envoyé à votre compagnie d\'assurance dans un délai de 5 jours ouvrés suivant l\'accident.',
+          ),
+        ),
+      ],
+    ),
+    // ─────────────────────────────────────────────────────────────────
+    // SÉRIE 6 — Éclairages et signaux lumineux
+    // ─────────────────────────────────────────────────────────────────
+    Serie(
+      id: 's6',
+      titre: 'Éclairages et signaux lumineux',
+      description:
+          'Maîtrisez l\'usage des feux de votre véhicule : position, croisement, route, antibrouillard et clignotants.',
+      categorie: 'Éclairage',
+      couleurHex: 0xFFFCD116, // jaune BF
+      emoji: '💡',
+      diapositives: [
+        Diapositive(
+          id: 's6_d1',
+          serieId: 's6',
+          ordre: 1,
+          titre: 'Les feux de position (veilleuses)',
+          imagePath: null,
+          contenu:
+              'Les **feux de position** (ou veilleuses) sont les feux les plus faibles du véhicule.\n\n'
+              '**Quand les utiliser ?**\n'
+              '• La nuit ou en cas de mauvaise visibilité\n'
+              '• En stationnement sur une route mal éclairée\n'
+              '• Seuls, ils ne permettent pas de voir la route — ils signalent uniquement votre présence\n\n'
+              '**Portée :** Environ 150 m pour être visible.\n\n'
+              '⚠️ Les feux de position seuls ne suffisent pas pour rouler la nuit : vous devez activer les feux de croisement.',
+          question: DiapositiveQuestion(
+            id: 's6_d1_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'À quoi servent principalement les feux de position (veilleuses) ?',
+            options: [
+              'À éclairer la route pour le conducteur',
+              'À signaler la présence du véhicule aux autres usagers',
+              'À remplacer les feux de croisement le jour',
+              'À indiquer un changement de direction',
+            ],
+            reponsesCorrectes: [1],
+            explication:
+                'Les feux de position (veilleuses) servent uniquement à signaler la présence du véhicule. Ils ne permettent pas d\'éclairer la route.',
+          ),
+        ),
+        Diapositive(
+          id: 's6_d2',
+          serieId: 's6',
+          ordre: 2,
+          titre: 'Les feux de croisement (codes)',
+          imagePath: null,
+          contenu:
+              'Les **feux de croisement** (codes) sont les feux utilisés pour la conduite normale la nuit.\n\n'
+              '**Portée :** 30 à 40 m — permettent de voir sans éblouir.\n\n'
+              '**Quand les utiliser ?**\n'
+              '• La nuit en agglomération et hors agglomération\n'
+              '• En cas de pluie, brouillard ou faible visibilité\n'
+              '• En journée sur autoroute (recommandé)\n'
+              '• Quand vous croisez ou suivez un autre véhicule\n\n'
+              '**Règle absolue :** Passer en feux de croisement lorsqu\'un véhicule arrive en face pour ne pas l\'éblouir.',
+          question: DiapositiveQuestion(
+            id: 's6_d2_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Vous roulez la nuit en feux de route. Un véhicule arrive en face. Que faites-vous ?',
+            options: [
+              'Vous gardez les feux de route pour mieux voir',
+              'Vous éteignez tous vos feux',
+              'Vous passez en feux de croisement',
+              'Vous klaxonnez et maintenez les feux de route',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Lorsqu\'un véhicule arrive en face, vous devez obligatoirement passer en feux de croisement pour ne pas l\'éblouir et éviter un accident.',
+          ),
+        ),
+        Diapositive(
+          id: 's6_d3',
+          serieId: 's6',
+          ordre: 3,
+          titre: 'Les feux de route (pleins phares)',
+          imagePath: null,
+          contenu:
+              'Les **feux de route** (pleins phares) offrent un éclairage puissant sur longue distance.\n\n'
+              '**Portée :** 100 m et plus.\n\n'
+              '**Quand les utiliser ?**\n'
+              '• La nuit, hors agglomération, sans véhicule en face\n'
+              '• Sur routes peu éclairées ou de montagne\n\n'
+              '**Quand les désactiver ?**\n'
+              '❌ Lorsqu\'un véhicule arrive en sens inverse\n'
+              '❌ Lorsque vous suivez un véhicule (éblouissement dans les rétroviseurs)\n'
+              '❌ En agglomération bien éclairée\n\n'
+              'Rouler avec les feux de route en présence d\'autres véhicules est une infraction.',
+          question: DiapositiveQuestion(
+            id: 's6_d3_q',
+            type: TypeQuestion.qcm,
+            texte: 'Dans quelle situation peut-on utiliser les feux de route ?',
+            options: [
+              'En ville avec éclairage public',
+              'En suivant de près un autre véhicule',
+              'La nuit, hors agglomération, sans véhicule en face',
+              'Lorsqu\'un véhicule arrive en face',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Les feux de route sont réservés à la nuit, hors agglomération, uniquement en l\'absence de tout autre véhicule à proximité.',
+          ),
+        ),
+        Diapositive(
+          id: 's6_d4',
+          serieId: 's6',
+          ordre: 4,
+          titre: 'Les feux antibrouillard',
+          imagePath: null,
+          contenu:
+              'Il existe deux types de feux antibrouillard :\n\n'
+              '🟡 **Antibrouillard avant** — feux jaunes proches du sol, à portée courte pour traverser le brouillard sans éblouissement.\n\n'
+              '🔴 **Antibrouillard arrière** — feu rouge très puissant, visible de loin.\n\n'
+              '**Conditions d\'utilisation :**\n'
+              '• Brouillard, neige abondante, pluie très forte\n'
+              '• Visibilité inférieure à 50 m\n\n'
+              '⚠️ **Interdiction :** Les feux antibrouillard arrière sont interdits hors conditions de mauvaise visibilité car ils éblouissent les conducteurs suivants.\n\n'
+              'En cas de mauvaise visibilité, réduisez aussi votre vitesse !',
+          question: DiapositiveQuestion(
+            id: 's6_d4_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Dans quelle condition peut-on allumer les feux antibrouillard arrière ?',
+            options: [
+              'La nuit sur autoroute',
+              'Lorsque la visibilité est inférieure à 50 m',
+              'En cas de pluie légère',
+              'En agglomération la nuit',
+            ],
+            reponsesCorrectes: [1],
+            explication:
+                'Les feux antibrouillard arrière ne doivent être utilisés qu\'en cas de visibilité réduite (brouillard, neige dense, pluie très forte) — quand la visibilité est inférieure à 50 m.',
+          ),
+        ),
+        Diapositive(
+          id: 's6_d5',
+          serieId: 's6',
+          ordre: 5,
+          titre: 'Les clignotants',
+          imagePath: null,
+          contenu:
+              'Les **clignotants** sont les feux de direction : ils informent les autres usagers de vos intentions.\n\n'
+              '**Quand les utiliser ?**\n'
+              '• Avant tout changement de direction (tourner, changer de voie, dépassement)\n'
+              '• Avant de quitter un stationnement\n'
+              '• Avant de sortir d\'un giratoire\n\n'
+              '**Règle :** Activer le clignotant **avant** la manœuvre, pas pendant.\n\n'
+              '**Feux de détresse (warning) :** Clignotement des 4 feux simultanément.\n'
+              '→ Utilisés en cas de panne, danger imminent, convoi lent.\n\n'
+              '⚠️ Ne pas oublier d\'éteindre le clignotant après la manœuvre.',
+          question: DiapositiveQuestion(
+            id: 's6_d5_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Quand faut-il activer le clignotant avant un changement de voie ?',
+            options: [
+              'Pendant le changement de voie',
+              'Après avoir changé de voie',
+              'Avant le changement de voie',
+              'Seulement si des voitures arrivent derrière',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Le clignotant doit être activé AVANT la manœuvre pour prévenir les autres usagers de votre intention. L\'activer pendant ou après ne sert à rien.',
+          ),
+        ),
+        Diapositive(
+          id: 's6_d6',
+          serieId: 's6',
+          ordre: 6,
+          titre: 'Avertisseur sonore (klaxon)',
+          imagePath: null,
+          contenu:
+              'L\'**avertisseur sonore** (klaxon) est un outil de sécurité, non d\'agressivité.\n\n'
+              '**Utilisation autorisée :**\n'
+              '• Pour prévenir d\'un danger imminent\n'
+              '• Sur certaines routes de montagne (panneau spécifique)\n'
+              '• Pour signaler votre présence dans un angle mort\n\n'
+              '**Utilisation INTERDITE :**\n'
+              '❌ En agglomération, sauf danger urgent\n'
+              '❌ La nuit en agglomération\n'
+              '❌ Pour exprimer son mécontentement ou impatience\n\n'
+              'L\'abus du klaxon en agglomération est passible d\'une amende.',
+          question: DiapositiveQuestion(
+            id: 's6_d6_q',
+            type: TypeQuestion.qcm,
+            texte: 'Dans quelle situation le klaxon est-il interdit ?',
+            options: [
+              'Quand un piéton traverse sans regarder',
+              'Pour signaler un danger imminent',
+              'Pour exprimer son mécontentement en ville',
+              'Sur une route de montagne signalée',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Le klaxon est interdit pour exprimer son mécontentement ou son impatience. Il est réservé aux situations de danger urgent ou aux zones spécifiquement signalées.',
+          ),
+        ),
+      ],
+    ),
+
+    // ─────────────────────────────────────────────────────────────────
+    // SÉRIE 7 — Conduite sur autoroute et voie rapide
+    // ─────────────────────────────────────────────────────────────────
+    Serie(
+      id: 's7',
+      titre: 'Autoroute et voie rapide',
+      description:
+          'Apprenez les règles spécifiques à l\'autoroute : insertion, vitesses, distances, aires de repos et conduite en cas de panne.',
+      categorie: 'Autoroute',
+      couleurHex: 0xFF2196F3, // bleu
+      emoji: '🛣️',
+      diapositives: [
+        Diapositive(
+          id: 's7_d1',
+          serieId: 's7',
+          ordre: 1,
+          titre: 'L\'insertion sur autoroute',
+          imagePath: null,
+          contenu:
+              'L\'**insertion sur autoroute** se fait via une voie d\'accélération (bretelle d\'entrée).\n\n'
+              '**Règles à respecter :**\n'
+              '1. Accélérer sur la bretelle pour atteindre la vitesse de la circulation\n'
+              '2. Regarder dans les rétroviseurs et l\'angle mort\n'
+              '3. Activer le clignotant gauche\n'
+              '4. S\'insérer progressivement dans la voie de droite\n\n'
+              '**Priorité :** Les véhicules déjà sur l\'autoroute sont prioritaires.\n'
+              'Vous devez adapter votre vitesse, pas eux.\n\n'
+              '⚠️ Ne jamais s\'arrêter au bout d\'une bretelle d\'entrée (sauf embouteillage).',
+          question: DiapositiveQuestion(
+            id: 's7_d1_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Lors de votre insertion sur autoroute, qui est prioritaire ?',
+            options: [
+              'Vous, car vous entrez sur une nouvelle voie',
+              'Les véhicules déjà sur l\'autoroute',
+              'Celui qui roule le plus vite',
+              'Vous si votre vitesse est suffisante',
+            ],
+            reponsesCorrectes: [1],
+            explication:
+                'Sur autoroute, les véhicules déjà présents sont prioritaires. Vous devez adapter votre vitesse sur la bretelle pour vous insérer sans les gêner.',
+          ),
+        ),
+        Diapositive(
+          id: 's7_d2',
+          serieId: 's7',
+          ordre: 2,
+          titre: 'Vitesses et voies sur autoroute',
+          imagePath: null,
+          contenu:
+              '**Vitesses maximales sur autoroute :**\n'
+              '🌞 Par temps sec : **130 km/h**\n'
+              '🌧️ Par temps de pluie : **110 km/h**\n'
+              '🌫️ Par temps de brouillard (vis. < 50 m) : **50 km/h**\n'
+              '🆕 Conducteur novice : **110 km/h**\n\n'
+              '**Utilisation des voies :**\n'
+              '• **Voie de droite** — voie normale de circulation\n'
+              '• **Voies du milieu / gauche** — uniquement pour dépasser\n'
+              '• On ne roule PAS durablement sur la voie de gauche (sauf circulation dense)\n\n'
+              '**Vitesse minimale :** Sur voie à trois voies, vous devez rouler à au moins 80 km/h sur la voie de gauche.',
+          question: DiapositiveQuestion(
+            id: 's7_d2_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Sur autoroute par temps de pluie, quelle est la vitesse maximale autorisée ?',
+            options: ['90 km/h', '100 km/h', '110 km/h', '130 km/h'],
+            reponsesCorrectes: [2],
+            explication:
+                'Par temps de pluie sur autoroute, la vitesse est limitée à 110 km/h (au lieu de 130 km/h par temps sec).',
+          ),
+        ),
+        Diapositive(
+          id: 's7_d3',
+          serieId: 's7',
+          ordre: 3,
+          titre: 'Distances de sécurité sur autoroute',
+          imagePath: null,
+          contenu:
+              'Sur autoroute, les distances de sécurité sont encore plus importantes en raison des vitesses élevées.\n\n'
+              '**Règle des 2 secondes → 3 secondes sur autoroute** (conditions normales).\n\n'
+              '**Repères en mètres à 130 km/h :**\n'
+              '• Temps de réaction (1 sec) → 36 m\n'
+              '• Distance de freinage → ~130 m\n'
+              '• **Distance d\'arrêt totale → ~170 m**\n\n'
+              '**Marquage sur autoroute :**\n'
+              '• Les tirets blancs sur l\'autoroute mesurent 10 m et sont espacés de 20 m.\n'
+              '• 2 espaces entre tirets = environ 60 m → utile pour estimer la distance.\n\n'
+              '⚠️ Plus la vitesse est élevée, plus la distance nécessaire est grande.',
+          question: DiapositiveQuestion(
+            id: 's7_d3_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'À 130 km/h, quelle est approximativement la distance d\'arrêt totale ?',
+            options: ['50 m', '100 m', '170 m', '250 m'],
+            reponsesCorrectes: [2],
+            explication:
+                'À 130 km/h, la distance d\'arrêt totale (réaction + freinage) est d\'environ 170 m. Cela représente presque 2 terrains de football !',
+          ),
+        ),
+        Diapositive(
+          id: 's7_d4',
+          serieId: 's7',
+          ordre: 4,
+          titre: 'Aires de repos et de service',
+          imagePath: null,
+          contenu:
+              '**Aires de repos** : Espace pour se reposer, faire une pause sans ravitaillement.\n'
+              '**Aires de service** : Espace avec carburant, restauration, toilettes.\n\n'
+              '**Règles importantes :**\n'
+              '• Il est **obligatoire de marquer une pause** toutes les 2 heures de conduite\n'
+              '• Le stationnement sur les bandes d\'arrêt d\'urgence est **interdit** (sauf panne)\n'
+              '• Vitesse max dans les aires : **30 km/h**\n\n'
+              '**Sortie d\'aire :** Accélérer sur la bretelle de sortie de l\'aire pour atteindre la vitesse de l\'autoroute avant de s\'insérer.\n\n'
+              '⚠️ La fatigue est la 2e cause de mortalité sur autoroute.',
+          question: DiapositiveQuestion(
+            id: 's7_d4_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'Quelle est la recommandation légale pour les pauses sur autoroute ?',
+            options: [
+              'Une pause toutes les 4 heures',
+              'Une pause toutes les 3 heures',
+              'Une pause toutes les 2 heures',
+              'Aucune obligation légale de pause',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Il est fortement recommandé (et souvent obligatoire pour les professionnels) de marquer une pause d\'au moins 15 minutes toutes les 2 heures de conduite.',
+          ),
+        ),
+        Diapositive(
+          id: 's7_d5',
+          serieId: 's7',
+          ordre: 5,
+          titre: 'Panne et urgence sur autoroute',
+          imagePath: null,
+          contenu:
+              'En cas de panne sur autoroute, agissez vite et méthodiquement :\n\n'
+              '1. Allumez les **feux de détresse** immédiatement\n'
+              '2. Quittez la chaussée et gagnez la **bande d\'arrêt d\'urgence (BAU)**\n'
+              '3. Sortez du véhicule par la **portière passager** (côté droit)\n'
+              '4. Franchissez la **glissière de sécurité** et restez derrière\n'
+              '5. Revêtez le **gilet fluorescent** AVANT de sortir\n'
+              '6. Appelez le **17 (police) ou le 15 (SAMU)** ou utilisez les bornes d\'appel d\'urgence (tous les 2 km)\n\n'
+              '⚠️ Ne placez PAS le triangle sur autoroute — trop dangereux.',
+          question: DiapositiveQuestion(
+            id: 's7_d5_q',
+            type: TypeQuestion.qcm,
+            texte:
+                'En cas de panne sur autoroute, où devez-vous vous mettre en sécurité ?',
+            options: [
+              'Sur la voie de droite avec les feux de détresse',
+              'Au milieu de la voie pour être visible',
+              'Derrière la glissière de sécurité, hors de la chaussée',
+              'Dans le véhicule avec la ceinture attachée',
+            ],
+            reponsesCorrectes: [2],
+            explication:
+                'Sur autoroute en panne, vous devez vous placer derrière la glissière de sécurité, HORS de la chaussée. Rester dans le véhicule ou sur la BAU est très dangereux.',
+          ),
+        ),
+        Diapositive(
+          id: 's7_d6',
+          serieId: 's7',
+          ordre: 6,
+          titre: 'Interdictions sur autoroute',
+          imagePath: null,
+          contenu:
+              'Sur autoroute, plusieurs comportements sont strictement **interdits** :\n\n'
+              '❌ Faire demi-tour ou reculer\n'
+              '❌ Traverser la chaussée à pied\n'
+              '❌ S\'arrêter sur la chaussée ou la BAU (sauf panne)\n'
+              '❌ Dépasser à droite (remonter sur voie de droite pour dépasser)\n'
+              '❌ Rouler sur la BAU (Bande d\'Arrêt d\'Urgence) sauf si le gestionnaire l\'a autorisé en cas de bouchon\n'
+              '❌ Cyclistes, piétons, engins agricoles — accès totalement interdit\n\n'
+              '**Vitesse minimale :** Il est interdit de rouler à moins de 80 km/h sur la voie de gauche d\'une autoroute à 3 voies.',
+          question: DiapositiveQuestion(
+            id: 's7_d6_q',
+            type: TypeQuestion.qcm,
+            texte: 'Lequel de ces comportements est autorisé sur autoroute ?',
+            options: [
+              'Faire demi-tour si vous avez raté votre sortie',
+              'Dépasser un véhicule par la droite',
+              'Rouler sur la bande d\'arrêt d\'urgence en cas de panne',
+              'Marquer une pause sur une aire de repos',
+            ],
+            reponsesCorrectes: [3],
+            explication:
+                'Seule la pause sur une aire de repos est autorisée. Les demi-tours, dépassements par la droite et arrêts sur la BAU (sauf panne réelle) sont interdits.',
           ),
         ),
       ],

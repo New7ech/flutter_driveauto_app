@@ -34,24 +34,26 @@ final _adminSeancesAVenirCountProvider = StreamProvider.autoDispose<int>((ref) {
       .collection('seances_pratiques')
       .snapshots()
       .map((s) {
-    final now = DateTime.now();
-    return s.docs.where((d) {
-      final ts = d.data()['dateSeance'];
-      if (ts == null) return false;
-      final date = (ts as Timestamp).toDate();
-      final statut = d.data()['statut'] as String? ?? 'planifiee';
-      return statut == 'planifiee' && date.isAfter(now);
-    }).length;
-  });
+        final now = DateTime.now();
+        return s.docs.where((d) {
+          final ts = d.data()['dateSeance'];
+          if (ts == null) return false;
+          final date = (ts as Timestamp).toDate();
+          final statut = d.data()['statut'] as String? ?? 'planifiee';
+          return statut == 'planifiee' && date.isAfter(now);
+        }).length;
+      });
 });
 
-final _adminAnnoncesActivesCountProvider =
-    StreamProvider.autoDispose<int>((ref) {
+final _adminAnnoncesActivesCountProvider = StreamProvider.autoDispose<int>((
+  ref,
+) {
   return FirebaseFirestore.instance
       .collection('annonces')
       .snapshots()
-      .map((s) =>
-          s.docs.where((d) => d.data()['active'] as bool? ?? true).length);
+      .map(
+        (s) => s.docs.where((d) => d.data()['active'] as bool? ?? true).length,
+      );
 });
 
 final _adminResultatsCountProvider = StreamProvider.autoDispose<int>((ref) {
@@ -70,10 +72,8 @@ class AdminHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final series = ref.watch(seriesProvider);
-    final totalSlides =
-        series.fold(0, (acc, s) => acc + s.nombreDiapositives);
-    final totalQuestions =
-        series.fold(0, (acc, s) => acc + s.nombreQuestions);
+    final totalSlides = series.fold(0, (acc, s) => acc + s.nombreDiapositives);
+    final totalQuestions = series.fold(0, (acc, s) => acc + s.nombreQuestions);
     final user = ref.watch(currentAuthUserProvider);
     final apprenantCount =
         ref.watch(_adminApprenantCountProvider).valueOrNull ?? 0;
@@ -91,23 +91,36 @@ class AdminHomeScreen extends ConsumerWidget {
           // ── Header gradient ───────────────────────────────────────────
           SliverToBoxAdapter(
             child: _buildGradientHeader(
-                context, ref, user?.displayName ?? 'Admin', series.length,
-                totalSlides, totalQuestions),
+              context,
+              ref,
+              user?.displayName ?? 'Admin',
+              series.length,
+              totalSlides,
+              totalQuestions,
+            ),
           ),
           // ── Contenu ───────────────────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildKpiRow(context, apprenantCount, seancesCount,
-                    annoncesCount, resultatsCount),
+                _buildKpiRow(
+                  context,
+                  apprenantCount,
+                  seancesCount,
+                  annoncesCount,
+                  resultatsCount,
+                ),
                 _buildSectionLabel(context, '📚  Contenu pédagogique'),
                 _buildMenuGrid(context, [
                   _MenuItem(
                     icon: Icons.library_books_rounded,
                     label: 'Séries & Cours',
                     subtitle: '${series.length} séries • $totalSlides slides',
-                    colors: [AppConstants.primaryColor, const Color(0xFF005C38)],
+                    colors: [
+                      AppConstants.primaryColor,
+                      const Color(0xFF005C38),
+                    ],
                     onTap: () => _push(context, const AdminSeriesScreen()),
                   ),
                   _MenuItem(
@@ -126,20 +139,14 @@ class AdminHomeScreen extends ConsumerWidget {
                     icon: Icons.people_rounded,
                     label: 'Gestion',
                     subtitle: 'Profils, rôles, progression',
-                    colors: [
-                      Colors.blue.shade700,
-                      Colors.blue.shade900
-                    ],
+                    colors: [Colors.blue.shade700, Colors.blue.shade900],
                     onTap: () => _push(context, const AdminUsersScreen()),
                   ),
                   _MenuItem(
                     icon: Icons.emoji_events_rounded,
                     label: 'Classement',
                     subtitle: 'Top apprenants par score',
-                    colors: [
-                      const Color(0xFFFCD116),
-                      const Color(0xFFB89800)
-                    ],
+                    colors: [const Color(0xFFFCD116), const Color(0xFFB89800)],
                     onTap: () => _push(context, const AdminClassementScreen()),
                   ),
                 ]),
@@ -169,16 +176,18 @@ class AdminHomeScreen extends ConsumerWidget {
                     label: 'Résultats examens',
                     subtitle: 'Historique des passages',
                     colors: [const Color(0xFF7B1FA2), const Color(0xFF4A148C)],
-                    onTap: () => _push(
-                        context, const AdminResultatsExamensScreen()),
+                    onTap: () =>
+                        _push(context, const AdminResultatsExamensScreen()),
                   ),
                   _MenuItem(
                     icon: Icons.settings_rounded,
                     label: 'Paramètres',
                     subtitle: 'Infos de l\'auto-école',
-                    colors: [Colors.blueGrey.shade600, Colors.blueGrey.shade900],
-                    onTap: () =>
-                        _push(context, const AdminParametresScreen()),
+                    colors: [
+                      Colors.blueGrey.shade600,
+                      Colors.blueGrey.shade900,
+                    ],
+                    onTap: () => _push(context, const AdminParametresScreen()),
                   ),
                 ]),
                 const SizedBox(height: 20),
@@ -279,8 +288,11 @@ class AdminHomeScreen extends ConsumerWidget {
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.admin_panel_settings_rounded,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.admin_panel_settings_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Text(
@@ -294,8 +306,11 @@ class AdminHomeScreen extends ConsumerWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.logout_rounded,
-                        color: Colors.white70, size: 22),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.white70,
+                      size: 22,
+                    ),
                     tooltip: 'Se déconnecter',
                     onPressed: () {
                       ref.read(authControllerProvider.notifier).logout();
@@ -315,14 +330,13 @@ class AdminHomeScreen extends ConsumerWidget {
                       shape: BoxShape.circle,
                       color: Colors.white.withValues(alpha: 0.2),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.4),
-                          width: 2),
+                        color: Colors.white.withValues(alpha: 0.4),
+                        width: 2,
+                      ),
                     ),
                     child: Center(
                       child: Text(
-                        adminName.isNotEmpty
-                            ? adminName[0].toUpperCase()
-                            : 'A',
+                        adminName.isNotEmpty ? adminName[0].toUpperCase() : 'A',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -338,10 +352,7 @@ class AdminHomeScreen extends ConsumerWidget {
                       children: [
                         const Text(
                           'Super-Administrateur',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -363,15 +374,22 @@ class AdminHomeScreen extends ConsumerWidget {
               Row(
                 children: [
                   _HeaderStat(
-                      label: 'Séries', value: '$nbSeries', icon: Icons.folder_rounded),
+                    label: 'Séries',
+                    value: '$nbSeries',
+                    icon: Icons.folder_rounded,
+                  ),
                   const SizedBox(width: 10),
                   _HeaderStat(
-                      label: 'Slides', value: '$nbSlides', icon: Icons.slideshow_rounded),
+                    label: 'Slides',
+                    value: '$nbSlides',
+                    icon: Icons.slideshow_rounded,
+                  ),
                   const SizedBox(width: 10),
                   _HeaderStat(
-                      label: 'Questions',
-                      value: '$nbQuestions',
-                      icon: Icons.quiz_rounded),
+                    label: 'Questions',
+                    value: '$nbQuestions',
+                    icon: Icons.quiz_rounded,
+                  ),
                 ],
               ),
             ],
@@ -438,10 +456,10 @@ class AdminHomeScreen extends ConsumerWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: _kAdminPrimary,
-              letterSpacing: 0.3,
-            ),
+          fontWeight: FontWeight.bold,
+          color: _kAdminPrimary,
+          letterSpacing: 0.3,
+        ),
       ),
     );
   }
@@ -468,8 +486,9 @@ class AdminHomeScreen extends ConsumerWidget {
   Widget _buildMenuCard(BuildContext context, _MenuItem item) {
     final luminance = item.colors[0].computeLuminance();
     final textColor = luminance > 0.3 ? Colors.black87 : Colors.white;
-    final subtitleColor =
-        luminance > 0.3 ? Colors.black54 : Colors.white.withValues(alpha: 0.8);
+    final subtitleColor = luminance > 0.3
+        ? Colors.black54
+        : Colors.white.withValues(alpha: 0.8);
     final iconBg = luminance > 0.3
         ? Colors.black.withValues(alpha: 0.1)
         : Colors.white.withValues(alpha: 0.22);
@@ -539,18 +558,21 @@ class AdminHomeScreen extends ConsumerWidget {
   // ────────────────────────────────────────────────────────────────────
 
   void _push(BuildContext context, Widget screen) {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (_) => screen));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   Future<void> _confirmerReset(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    final ok =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: const Text('Réinitialiser les données ?',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Réinitialiser les données ?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             content: const Text(
               'Toutes les séries et diapositives seront remplacées par les données par défaut. '
               'Cette action est irréversible.',
@@ -562,9 +584,11 @@ class AdminHomeScreen extends ConsumerWidget {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red.shade700,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
+                  backgroundColor: Colors.red.shade700,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Réinitialiser'),
               ),
@@ -592,8 +616,11 @@ class AdminHomeScreen extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HeaderStat extends StatelessWidget {
-  const _HeaderStat(
-      {required this.label, required this.value, required this.icon});
+  const _HeaderStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
   final String label;
   final String value;
   final IconData icon;
@@ -621,8 +648,7 @@ class _HeaderStat extends StatelessWidget {
             ),
             Text(
               label,
-              style:
-                  const TextStyle(color: Colors.white70, fontSize: 10),
+              style: const TextStyle(color: Colors.white70, fontSize: 10),
             ),
           ],
         ),
@@ -632,8 +658,11 @@ class _HeaderStat extends StatelessWidget {
 }
 
 class _QuickChip extends StatelessWidget {
-  const _QuickChip(
-      {required this.icon, required this.label, required this.onTap});
+  const _QuickChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -643,13 +672,11 @@ class _QuickChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: _kAdminPrimary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: _kAdminPrimary.withValues(alpha: 0.25)),
+          border: Border.all(color: _kAdminPrimary.withValues(alpha: 0.25)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -709,7 +736,10 @@ class _KpiCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.75)),
+              style: TextStyle(
+                fontSize: 9,
+                color: color.withValues(alpha: 0.75),
+              ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -163,8 +163,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     switch (_etape) {
                       _Etape.localReset => 'Créer un nouveau mot de passe',
                       _Etape.successFirebase ||
-                      _Etape.successLocal =>
-                        'Réinitialisation terminée',
+                      _Etape.successLocal => 'Réinitialisation terminée',
                       _ => 'Réinitialisez votre accès',
                     },
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
@@ -192,8 +191,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               color: AppConstants.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lock_reset_rounded,
-                size: 40, color: AppConstants.primaryColor),
+            child: const Icon(
+              Icons.lock_reset_rounded,
+              size: 40,
+              color: AppConstants.primaryColor,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -201,15 +203,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           'Entrez votre adresse email',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 17,
-              ),
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Si votre compte est connecté à Firebase, un email de réinitialisation vous sera envoyé.\nSinon, vous pourrez définir un nouveau mot de passe directement.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade500, height: 1.5),
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey.shade500,
+            height: 1.5,
+          ),
         ),
         const SizedBox(height: 32),
         Form(
@@ -232,8 +238,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const SizedBox(height: 16),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('Retour à la connexion',
-              style: TextStyle(color: AppConstants.primaryColor)),
+          child: const Text(
+            'Retour à la connexion',
+            style: TextStyle(color: AppConstants.primaryColor),
+          ),
         ),
       ],
     );
@@ -262,7 +270,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 child: Text(
                   'Votre compte est enregistré localement sur cet appareil. '
                   'Définissez un nouveau mot de passe ci-dessous — aucun email n\'est nécessaire.',
-                  style: TextStyle(fontSize: 13, color: Colors.orange, height: 1.4),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.orange,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
@@ -271,10 +283,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const SizedBox(height: 24),
         Text(
           'Nouveau mot de passe',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
@@ -291,8 +302,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 label: 'Nouveau mot de passe (min. 6 caractères)',
                 icon: Icons.lock_outline_rounded,
                 obscure: _obscurePw,
-                onToggleObscure: () =>
-                    setState(() => _obscurePw = !_obscurePw),
+                onToggleObscure: () => setState(() => _obscurePw = !_obscurePw),
                 onChanged: (_) => setState(() {}),
                 validator: (v) {
                   if (v == null || v.length < 6) {
@@ -345,8 +355,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               color: AppConstants.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.mark_email_read_rounded,
-                size: 46, color: AppConstants.primaryColor),
+            child: const Icon(
+              Icons.mark_email_read_rounded,
+              size: 46,
+              color: AppConstants.primaryColor,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -354,9 +367,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           'Email envoyé !',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppConstants.primaryColor,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppConstants.primaryColor,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -381,17 +394,20 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: const Column(
             children: [
               _InfoRow(
-                  icon: Icons.folder_outlined,
-                  text: 'Vérifiez aussi le dossier Spam / Courrier indésirable.'),
+                icon: Icons.folder_outlined,
+                text: 'Vérifiez aussi le dossier Spam / Courrier indésirable.',
+              ),
               SizedBox(height: 8),
               _InfoRow(
-                  icon: Icons.timer_outlined,
-                  text: 'Le lien expire dans 1 heure.'),
+                icon: Icons.timer_outlined,
+                text: 'Le lien expire dans 1 heure.',
+              ),
               SizedBox(height: 8),
               _InfoRow(
-                  icon: Icons.email_outlined,
-                  text:
-                      'L\'email vient de noreply@driveauto-ed6b7.firebaseapp.com'),
+                icon: Icons.email_outlined,
+                text:
+                    'L\'email vient de noreply@driveauto-ed6b7.firebaseapp.com',
+              ),
             ],
           ),
         ),
@@ -402,16 +418,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: AppConstants.primaryColor,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
           onPressed: () => context.go(AppConstants.routeLogin),
         ),
         const SizedBox(height: 12),
         TextButton(
           onPressed: _envoyerEmail,
-          child: Text('Renvoyer l\'email',
-              style: TextStyle(color: Colors.grey.shade500)),
+          child: Text(
+            'Renvoyer l\'email',
+            style: TextStyle(color: Colors.grey.shade500),
+          ),
         ),
       ],
     );
@@ -431,8 +450,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               color: AppConstants.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lock_open_rounded,
-                size: 46, color: AppConstants.primaryColor),
+            child: const Icon(
+              Icons.lock_open_rounded,
+              size: 46,
+              color: AppConstants.primaryColor,
+            ),
           ),
         ),
         const SizedBox(height: 24),
@@ -440,16 +462,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           'Mot de passe mis à jour !',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppConstants.primaryColor,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppConstants.primaryColor,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
           textAlign: TextAlign.center,
           style: TextStyle(
-              fontSize: 13, color: Colors.grey.shade500, height: 1.5),
+            fontSize: 13,
+            color: Colors.grey.shade500,
+            height: 1.5,
+          ),
         ),
         const SizedBox(height: 32),
         FilledButton.icon(
@@ -458,8 +483,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           style: FilledButton.styleFrom(
             backgroundColor: AppConstants.primaryColor,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
           onPressed: () => context.go(AppConstants.routeLogin),
         ),
@@ -487,8 +513,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon:
-            Icon(icon, color: AppConstants.primaryColor, size: 20),
+        prefixIcon: Icon(icon, color: AppConstants.primaryColor, size: 20),
         suffixIcon: onToggleObscure != null
             ? IconButton(
                 icon: Icon(
@@ -513,15 +538,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide:
-              const BorderSide(color: AppConstants.primaryColor, width: 2),
+          borderSide: const BorderSide(
+            color: AppConstants.primaryColor,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.red.shade400),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -564,7 +593,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 else if (icon != null)
                   Icon(icon, color: Colors.white, size: 18),
@@ -601,8 +632,10 @@ class _InfoRow extends StatelessWidget {
         Icon(icon, color: Colors.blue, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(text,
-              style: const TextStyle(fontSize: 13, color: Colors.blue)),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13, color: Colors.blue),
+          ),
         ),
       ],
     );

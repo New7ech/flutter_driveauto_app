@@ -32,19 +32,33 @@ final userDeletionWatcherProvider = StreamProvider<bool>((ref) {
 
 // Émet true quand le compte est approuvé par l'admin.
 // Les admins et le mode local sont toujours considérés comme approuvés.
+// Émet false immédiatement pour éviter de bloquer le routeur indéfiniment
+// (ex. hors-ligne sans cache Firestore).
 final userApprovalProvider = StreamProvider<bool>((ref) {
   final user = ref.watch(currentAuthUserProvider);
   final firestore = ref.watch(firebaseFirestoreProvider);
 
   if (user == null) return const Stream.empty();
-  if (user.role == 'admin') return Stream.value(true);
-  if (firestore == null) return Stream.value(true); // mode local : pas de validation
+  if (firestore == null) return Stream.value(true);
 
-  return firestore
+  final controller = StreamController<bool>();
+  controller.add(false); // valeur immédiate pendant que Firestore répond
+  final sub = firestore
       .collection('users')
       .doc(user.id)
       .snapshots()
-      .map((snap) => snap.data()?['approved'] as bool? ?? false);
+      .map((snap) {
+        final data = snap.data();
+        if (data == null) return false;
+        if (data['role'] == 'admin') return true;
+        return data['approved'] as bool? ?? false;
+      })
+      .listen(controller.add, onError: (_) {});
+  ref.onDispose(() {
+    sub.cancel();
+    controller.close();
+  });
+  return controller.stream;
 });
 
 final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
@@ -92,8 +106,22 @@ final currentAuthUserProvider = Provider<AppAuthUser?>((ref) {
   return authState.valueOrNull ?? ref.watch(authServiceProvider).currentUser;
 });
 
+final userProfileRoleProvider = StreamProvider<String?>((ref) {
+  final user = ref.watch(currentAuthUserProvider);
+  final firestore = ref.watch(firebaseFirestoreProvider);
+  if (user == null) return Stream.value(null);
+  if (firestore == null) return Stream.value(user.role);
+
+  return firestore.collection('users').doc(user.id).snapshots().map((snap) {
+    final role = snap.data()?['role'] as String?;
+    return role == 'admin' ? 'admin' : AppAuthUser.defaultRole;
+  });
+});
+
 final userRoleProvider = Provider<String>((ref) {
-  return ref.watch(currentAuthUserProvider)?.role ?? 'apprenant';
+  return ref.watch(userProfileRoleProvider).valueOrNull ??
+      ref.watch(currentAuthUserProvider)?.role ??
+      AppAuthUser.defaultRole;
 });
 
 final authLandingRouteProvider = Provider<String>((ref) {
@@ -171,7 +199,15 @@ class AuthController extends AsyncNotifier<void> {
     try {
       final user = await ref.read(authServiceProvider).loginWithGoogle();
 
-      await _syncUserProfile(user);
+      // Détecter si c'est un nouvel utilisateur Google (document Firestore absent)
+      bool isNewGoogleUser = false;
+      final firestore = ref.read(firebaseFirestoreProvider);
+      if (firestore != null) {
+        final doc = await firestore.collection('users').doc(user.id).get();
+        isNewGoogleUser = !doc.exists;
+      }
+
+      await _syncUserProfile(user, isNewUser: isNewGoogleUser);
       _subscribeToTopics();
       state = const AsyncValue.data(null);
       return user;
@@ -187,10 +223,12 @@ class AuthController extends AsyncNotifier<void> {
   }) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(authServiceProvider).updatePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
+      await ref
+          .read(authServiceProvider)
+          .updatePassword(
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+          );
       state = const AsyncValue.data(null);
       return true;
     } catch (e, st) {
@@ -268,21 +306,39 @@ class AuthController extends AsyncNotifier<void> {
     }
   }
 
-  Future<void> _syncUserProfile(AppAuthUser user, {bool isNewUser = false}) async {
+  Future<void> _syncUserProfile(
+    AppAuthUser user, {
+    bool isNewUser = false,
+  }) async {
     try {
+      var shouldWriteRole = isNewUser;
+      var shouldWriteInitialApproval = isNewUser;
+      if (!shouldWriteRole) {
+        final firestore = ref.read(firebaseFirestoreProvider);
+        if (firestore != null) {
+          final doc = await firestore.collection('users').doc(user.id).get();
+          if (!doc.exists) {
+            shouldWriteRole = true;
+            shouldWriteInitialApproval = true;
+          } else {
+            shouldWriteRole = doc.data()?['role'] == null;
+          }
+        }
+      }
+
       await ref
           .read(userRepositoryProvider)
           .saveUserProfile(
             userId: user.id,
             email: user.email,
             displayName: user.displayName,
-            role: user.role,
+            role: shouldWriteRole ? AppAuthUser.defaultRole : null,
             emailVerified: user.emailVerified,
             provider: user.provider,
             createdAt: user.createdAt,
             lastLoginAt: user.lastLoginAt,
             // Lors de l'inscription : pending. Lors du login : merge préserve la valeur existante.
-            approved: isNewUser ? false : null,
+            approved: shouldWriteInitialApproval ? false : null,
           );
     } catch (_) {
       // Le profil ne doit pas bloquer l'authentification si Firestore est indisponible.

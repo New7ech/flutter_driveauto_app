@@ -40,14 +40,20 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
     final user = ref.read(currentAuthUserProvider);
     if (user != null) {
       final repo = ref.read(userRepositoryProvider);
-      final currentProgress = await repo.getUserProgress(user.id);
+      UserProgress? currentProgress;
+      try {
+        currentProgress = await repo.getUserProgress(user.id);
+      } catch (_) {
+        return;
+      }
 
       UserProgress updated;
       if (currentProgress != null) {
         updated = currentProgress.copyWith(
-          globalScore:
-              (currentProgress.globalScore + widget.score) /
-              2, // Moyenne simplifiée
+          globalScore: (currentProgress.globalScore + widget.score) / 2,
+          totalQuizzesPassed: widget.score >= 80.0
+              ? currentProgress.totalQuizzesPassed + 1
+              : currentProgress.totalQuizzesPassed,
         );
       } else {
         updated = UserProgress(
@@ -87,8 +93,8 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: hasPassed
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.redAccent.withOpacity(0.1),
+                      ? Colors.green.withValues(alpha: 0.1)
+                      : Colors.redAccent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -138,7 +144,9 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
 
               ...List.generate(widget.quiz.questions.length, (index) {
                 final q = widget.quiz.questions[index];
-                final userAnswer = widget.userAnswers[index];
+                final userAnswer = index < widget.userAnswers.length
+                    ? widget.userAnswers[index]
+                    : -1;
                 final isCorrect = userAnswer == q.correctAnswerIndex;
 
                 return Card(
@@ -147,8 +155,8 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
                   shape: RoundedRectangleBorder(
                     side: BorderSide(
                       color: isCorrect
-                          ? Colors.green.withOpacity(0.5)
-                          : Colors.redAccent.withOpacity(0.5),
+                          ? Colors.green.withValues(alpha: 0.5)
+                          : Colors.redAccent.withValues(alpha: 0.5),
                       width: 2,
                     ),
                     borderRadius: BorderRadius.circular(16),
@@ -200,12 +208,12 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: isCorrect
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.redAccent.withOpacity(0.1),
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.redAccent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'Votre réponse : ${q.options[userAnswer]}',
+                            'Votre réponse : ${_answerLabel(q, userAnswer)}',
                             style: TextStyle(
                               color: isCorrect
                                   ? Colors.green
@@ -222,11 +230,11 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
+                              color: Colors.green.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              'Bonne réponse : ${q.options[q.correctAnswerIndex]}',
+                              'Bonne réponse : ${_answerLabel(q, q.correctAnswerIndex)}',
                               style: const TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,
@@ -279,5 +287,12 @@ class _QuizResultsScreenState extends ConsumerState<QuizResultsScreen> {
         ),
       ),
     );
+  }
+
+  String _answerLabel(Question question, int answerIndex) {
+    if (answerIndex < 0 || answerIndex >= question.options.length) {
+      return 'Aucune réponse';
+    }
+    return question.options[answerIndex];
   }
 }

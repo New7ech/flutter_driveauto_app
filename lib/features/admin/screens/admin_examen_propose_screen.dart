@@ -13,15 +13,18 @@ const _kAdminDark = Color(0xFF4A148C);
 
 // ── Provider : liste des examens proposés ────────────────────────────────────
 
-final _examensProposesProvider =
-    StreamProvider<List<Map<String, dynamic>>>((ref) {
+final _examensProposesProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
   return FirebaseFirestore.instance
       .collection('examens_proposes')
       .orderBy('dateCreation', descending: true)
       .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-          .toList());
+      .map(
+        (snap) => snap.docs
+            .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+            .toList(),
+      );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,8 +71,10 @@ class _AdminExamenProposeScreenState
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_rounded,
-                                color: Colors.white),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: Colors.white,
+                            ),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                           const Text(
@@ -86,8 +91,11 @@ class _AdminExamenProposeScreenState
                         padding: EdgeInsets.only(left: 20),
                         child: Text(
                           'Proposez un examen blanc officiel à vos apprenants.\nIl apparaîtra sur leur tableau de bord.',
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
                         ),
                       ),
                     ],
@@ -104,14 +112,11 @@ class _AdminExamenProposeScreenState
               loading: () => const SliverToBoxAdapter(
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => SliverToBoxAdapter(
-                child: Center(child: Text('Erreur : $e')),
-              ),
+              error: (e, _) =>
+                  SliverToBoxAdapter(child: Center(child: Text('Erreur : $e'))),
               data: (examens) {
                 if (examens.isEmpty) {
-                  return SliverToBoxAdapter(
-                    child: _buildEmpty(context),
-                  );
+                  return SliverToBoxAdapter(child: _buildEmpty(context));
                 }
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
@@ -154,8 +159,11 @@ class _AdminExamenProposeScreenState
               color: _kAdminPrimary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.school_outlined,
-                size: 48, color: _kAdminPrimary),
+            child: const Icon(
+              Icons.school_outlined,
+              size: 48,
+              color: _kAdminPrimary,
+            ),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -223,21 +231,24 @@ class _AdminExamenProposeScreenState
   }
 
   Future<void> _supprimerExamen(String id) async {
-    final ok = await showDialog<bool>(
+    final ok =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Text('Supprimer cet examen ?'),
-            content: const Text(
-                'Il ne sera plus visible par les apprenants.'),
+            content: const Text('Il ne sera plus visible par les apprenants.'),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Annuler')),
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annuler'),
+              ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: Colors.red.shade700),
+                  backgroundColor: Colors.red.shade700,
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Supprimer'),
               ),
@@ -351,14 +362,18 @@ class _ExamenProposeCard extends StatelessWidget {
                       Text(
                         _titre,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       if (dc != null)
                         Text(
                           'Créé le ${_fmt(dc)}',
                           style: TextStyle(
-                              fontSize: 11, color: Colors.grey.shade500),
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                          ),
                         ),
                     ],
                   ),
@@ -366,7 +381,9 @@ class _ExamenProposeCard extends StatelessWidget {
                 // Badge statut
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _actif
                         ? Colors.green.withValues(alpha: 0.1)
@@ -380,8 +397,8 @@ class _ExamenProposeCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: _actif
                           ? (isExpired
-                              ? Colors.orange.shade700
-                              : Colors.green.shade700)
+                                ? Colors.orange.shade700
+                                : Colors.green.shade700)
                           : Colors.grey.shade500,
                     ),
                   ),
@@ -393,7 +410,10 @@ class _ExamenProposeCard extends StatelessWidget {
               Text(
                 _description,
                 style: TextStyle(
-                    fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.4,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -417,8 +437,7 @@ class _ExamenProposeCard extends StatelessWidget {
                 if (dl != null)
                   _InfoChip(
                     icon: Icons.event_rounded,
-                    label:
-                        'Limite : ${_fmt(dl)}',
+                    label: 'Limite : ${_fmt(dl)}',
                     color: isExpired
                         ? Colors.orange.shade700
                         : Colors.teal.shade700,
@@ -436,16 +455,20 @@ class _ExamenProposeCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.format_quote_rounded,
-                        size: 16, color: _kAdminPrimary),
+                    const Icon(
+                      Icons.format_quote_rounded,
+                      size: 16,
+                      color: _kAdminPrimary,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _message,
                         style: const TextStyle(
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            color: _kAdminPrimary),
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: _kAdminPrimary,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -470,8 +493,9 @@ class _ExamenProposeCard extends StatelessWidget {
                   ),
                   label: Text(_actif ? 'Désactiver' : 'Activer'),
                   style: TextButton.styleFrom(
-                    foregroundColor:
-                        _actif ? Colors.orange.shade700 : Colors.green,
+                    foregroundColor: _actif
+                        ? Colors.orange.shade700
+                        : Colors.green,
                   ),
                   onPressed: onToggle,
                 ),
@@ -480,7 +504,8 @@ class _ExamenProposeCard extends StatelessWidget {
                   icon: const Icon(Icons.delete_outline_rounded, size: 15),
                   label: const Text('Supprimer'),
                   style: TextButton.styleFrom(
-                      foregroundColor: Colors.red.shade400),
+                    foregroundColor: Colors.red.shade400,
+                  ),
                   onPressed: onDelete,
                 ),
               ],
@@ -505,8 +530,7 @@ class _CreateExamenForm extends ConsumerStatefulWidget {
   final ValueChanged<Map<String, dynamic>> onSubmit;
 
   @override
-  ConsumerState<_CreateExamenForm> createState() =>
-      _CreateExamenFormState();
+  ConsumerState<_CreateExamenForm> createState() => _CreateExamenFormState();
 }
 
 class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
@@ -533,8 +557,7 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Padding(
         padding: EdgeInsets.only(
@@ -568,14 +591,16 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                       color: _kAdminPrimary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.school_rounded,
-                        color: _kAdminPrimary, size: 20),
+                    child: const Icon(
+                      Icons.school_rounded,
+                      color: _kAdminPrimary,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Text(
                     'Nouvel examen officiel',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 17),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                   ),
                 ],
               ),
@@ -636,8 +661,7 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                     context: context,
                     initialDate: DateTime.now().add(const Duration(days: 7)),
                     firstDate: DateTime.now(),
-                    lastDate:
-                        DateTime.now().add(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
                   if (picked != null) {
                     setState(() => _dateLimite = picked);
@@ -645,7 +669,9 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 14),
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -653,11 +679,13 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.event_rounded,
-                          size: 18,
-                          color: _dateLimite != null
-                              ? _kAdminPrimary
-                              : Colors.grey.shade500),
+                      Icon(
+                        Icons.event_rounded,
+                        size: 18,
+                        color: _dateLimite != null
+                            ? _kAdminPrimary
+                            : Colors.grey.shade500,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         _dateLimite != null
@@ -673,10 +701,12 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                       const Spacer(),
                       if (_dateLimite != null)
                         GestureDetector(
-                          onTap: () =>
-                              setState(() => _dateLimite = null),
-                          child: Icon(Icons.clear_rounded,
-                              size: 16, color: Colors.grey.shade400),
+                          onTap: () => setState(() => _dateLimite = null),
+                          child: Icon(
+                            Icons.clear_rounded,
+                            size: 16,
+                            color: Colors.grey.shade400,
+                          ),
                         ),
                     ],
                   ),
@@ -725,12 +755,16 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white),
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           else ...[
-                            const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 18),
+                            const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                             const SizedBox(width: 8),
                           ],
                           Text(
@@ -784,8 +818,10 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kAdminPrimary, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     );
   }
@@ -809,16 +845,22 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             '$value',
             style: TextStyle(
-                fontSize: 22, fontWeight: FontWeight.bold, color: color),
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           Slider(
             value: value.toDouble(),
@@ -850,8 +892,11 @@ class _CreateExamenFormState extends ConsumerState<_CreateExamenForm> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip(
-      {required this.icon, required this.label, required this.color});
+  const _InfoChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
   final IconData icon;
   final String label;
   final Color color;
@@ -870,9 +915,14 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 5),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

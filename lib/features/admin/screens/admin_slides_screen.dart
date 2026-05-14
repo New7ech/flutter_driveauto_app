@@ -17,8 +17,7 @@ class AdminSlidesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Relit la serie depuis le provider pour avoir les mises a jour en temps reel
-    final serieActuelle =
-        ref.watch(serieByIdProvider(serie.id)) ?? serie;
+    final serieActuelle = ref.watch(serieByIdProvider(serie.id)) ?? serie;
     final slides = serieActuelle.diapositives;
     final couleur = Color(serieActuelle.couleurHex);
 
@@ -108,8 +107,7 @@ class _SlideAdminCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -141,14 +139,18 @@ class _SlideAdminCard extends ConsumerWidget {
                   child: Text(
                     diapo.titre,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
                 // Badge question
                 if (diapo.aUneQuestion)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 7, vertical: 2),
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppConstants.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -156,8 +158,11 @@ class _SlideAdminCard extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.quiz_outlined,
-                            size: 11, color: AppConstants.primaryColor),
+                        Icon(
+                          Icons.quiz_outlined,
+                          size: 11,
+                          color: AppConstants.primaryColor,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           diapo.question!.type.name.toUpperCase(),
@@ -178,22 +183,26 @@ class _SlideAdminCard extends ConsumerWidget {
                 diapo.contenu,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontSize: 12, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
             if (diapo.imagePath != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.image_outlined,
-                      size: 12, color: Colors.grey.shade500),
+                  Icon(
+                    Icons.image_outlined,
+                    size: 12,
+                    color: Colors.grey.shade500,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       diapo.imagePath!,
                       style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade500),
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -220,11 +229,11 @@ class _SlideAdminCard extends ConsumerWidget {
                 ),
                 TextButton.icon(
                   style: TextButton.styleFrom(
-                      foregroundColor: AppConstants.secondaryColor),
+                    foregroundColor: AppConstants.secondaryColor,
+                  ),
                   icon: const Icon(Icons.delete_outline, size: 14),
                   label: const Text('Supprimer'),
-                  onPressed: () =>
-                      _confirmerSuppression(context, ref),
+                  onPressed: () => _confirmerSuppression(context, ref),
                 ),
               ],
             ),
@@ -235,13 +244,17 @@ class _SlideAdminCard extends ConsumerWidget {
   }
 
   Future<void> _confirmerSuppression(
-      BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final ok =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text('Supprimer « ${diapo.titre} » ?'),
             content: const Text(
-                'Cette diapositive et sa question seront supprimées.'),
+              'Cette diapositive et sa question seront supprimées.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -249,7 +262,8 @@ class _SlideAdminCard extends ConsumerWidget {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppConstants.secondaryColor),
+                  backgroundColor: AppConstants.secondaryColor,
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Supprimer'),
               ),

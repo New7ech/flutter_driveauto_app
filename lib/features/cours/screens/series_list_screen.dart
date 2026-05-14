@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/models/serie.dart';
 import '../../../providers/serie_provider.dart';
+import '../../../providers/series_progress_provider.dart';
 
 class SeriesListScreen extends ConsumerWidget {
   const SeriesListScreen({super.key});
@@ -97,8 +98,10 @@ class SeriesListScreen extends ConsumerWidget {
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_back_rounded,
+                        color: Colors.white,
+                      ),
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                     const Text(
@@ -205,7 +208,7 @@ class _StatBadge extends StatelessWidget {
 // SERIE CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SerieCard extends StatelessWidget {
+class _SerieCard extends ConsumerWidget {
   const _SerieCard({
     required this.serie,
     required this.index,
@@ -217,15 +220,26 @@ class _SerieCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = Color(serie.couleurHex);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final derniereSlideVue = ref.watch(
+      seriesProgressProvider.select((state) => state[serie.id] ?? -1),
+    );
+    final total = serie.nombreDiapositives;
+    final pct = total == 0
+        ? 0.0
+        : ((derniereSlideVue + 1) / total).clamp(0.0, 1.0);
+    final terminee = total > 0 && derniereSlideVue >= total - 1;
+    final commencee = derniereSlideVue >= 0;
 
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppConstants.cardColorDark : AppConstants.cardColorLight,
+          color: isDark
+              ? AppConstants.cardColorDark
+              : AppConstants.cardColorLight,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -251,7 +265,12 @@ class _SerieCard extends StatelessWidget {
                     width: 5,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [color, color.withValues(alpha: 0.4)],
+                        colors: terminee
+                            ? [
+                                Colors.green,
+                                Colors.green.withValues(alpha: 0.4),
+                              ]
+                            : [color, color.withValues(alpha: 0.4)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -299,12 +318,14 @@ class _SerieCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Numéro + titre
+                                // Numéro + badge statut
                                 Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 7, vertical: 2),
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: color.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(6),
@@ -318,14 +339,25 @@ class _SerieCard extends StatelessWidget {
                                         ),
                                       ),
                                     ),
+                                    const SizedBox(width: 6),
+                                    if (terminee)
+                                      _StatusBadge(
+                                        label: 'Terminé',
+                                        icon: Icons.check_circle_rounded,
+                                        color: Colors.green,
+                                      )
+                                    else if (commencee)
+                                      _StatusBadge(
+                                        label: 'En cours',
+                                        icon: Icons.play_circle_rounded,
+                                        color: color,
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   serie.titre,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
+                                  style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -335,15 +367,53 @@ class _SerieCard extends StatelessWidget {
                                   serie.description,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                          color: Colors.grey.shade500,
-                                          height: 1.4),
+                                        color: Colors.grey.shade500,
+                                        height: 1.4,
+                                      ),
                                 ),
                                 const SizedBox(height: 10),
-                                // Chips — Wrap évite l'overflow horizontal
+                                // Barre de progression si commencée
+                                if (commencee) ...[
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                          child: LinearProgressIndicator(
+                                            value: pct,
+                                            minHeight: 5,
+                                            backgroundColor: color.withValues(
+                                              alpha: 0.15,
+                                            ),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  terminee
+                                                      ? Colors.green
+                                                      : color,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${(pct * 100).round()}%',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: terminee
+                                              ? Colors.green
+                                              : color,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
+                                // Chips
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 6,
@@ -365,19 +435,23 @@ class _SerieCard extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Flèche
+                          // Flèche / check
                           Padding(
                             padding: const EdgeInsets.only(left: 8),
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.1),
+                                color: terminee
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : color.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
-                                Icons.arrow_forward_ios_rounded,
+                                terminee
+                                    ? Icons.check_rounded
+                                    : Icons.arrow_forward_ios_rounded,
                                 size: 14,
-                                color: color,
+                                color: terminee ? Colors.green : color,
                               ),
                             ),
                           ),
@@ -395,14 +469,48 @@ class _SerieCard extends StatelessWidget {
   }
 }
 
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
+  const _Chip({required this.icon, required this.label, required this.color});
 
   final IconData icon;
   final String label;

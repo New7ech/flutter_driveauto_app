@@ -3,12 +3,14 @@
 
 import 'dart:io';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/models/serie.dart';
 import '../../../providers/serie_provider.dart';
+import '../../../providers/series_progress_provider.dart';
 
 class SlideViewerScreen extends ConsumerStatefulWidget {
   const SlideViewerScreen({super.key, required this.serieId});
@@ -22,6 +24,7 @@ class SlideViewerScreen extends ConsumerStatefulWidget {
 class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
   late PageController _pageController;
   int _currentPage = 0;
+  bool _progressInitialized = false;
 
   final Map<String, int> _selectedAnswers = {};
   final Map<String, bool> _validated = {};
@@ -31,6 +34,15 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+  }
+
+  void _initProgress() {
+    if (_progressInitialized) return;
+    _progressInitialized = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(seriesProgressProvider.notifier).marquerSlide(widget.serieId, 0);
+    });
   }
 
   @override
@@ -54,9 +66,7 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
     final localSerie = ref.watch(serieByIdProvider(widget.serieId));
 
     if (remoteAsync.isLoading && localSerie == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final remoteSerie = remoteAsync.valueOrNull
@@ -72,6 +82,15 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
     }
 
     final total = serie.diapositives.length;
+    if (total == 0) {
+      return Scaffold(
+        appBar: AppBar(title: Text(serie.titre)),
+        body: const Center(child: Text('Aucune diapositive disponible.')),
+      );
+    }
+
+    _initProgress();
+
     final progress = total == 0 ? 0.0 : (_currentPage + 1) / total;
     final couleur = Color(serie.couleurHex);
 
@@ -88,8 +107,7 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
             ),
             Text(
               '${serie.emoji}  ${serie.categorie}',
-              style:
-                  const TextStyle(fontSize: 11, color: Colors.white70),
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
             ),
           ],
         ),
@@ -115,7 +133,12 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
             child: PageView.builder(
               controller: _pageController,
               itemCount: total,
-              onPageChanged: (i) => setState(() => _currentPage = i),
+              onPageChanged: (i) {
+                setState(() => _currentPage = i);
+                ref
+                    .read(seriesProgressProvider.notifier)
+                    .marquerSlide(widget.serieId, i);
+              },
               itemBuilder: (context, index) {
                 final diapo = serie.diapositives[index];
                 return _buildSlidePage(context, diapo, couleur);
@@ -202,9 +225,9 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                 Text(
                   diapo.titre,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    height: 1.3,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 _buildRichContent(context, diapo.contenu),
@@ -221,38 +244,112 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
   }
 
   Widget _buildImageSection(Diapositive diapo, Color couleur) {
-    if (diapo.imagePath != null && diapo.imagePath!.isNotEmpty) {
-      final path = diapo.imagePath!;
-      Widget imageWidget;
-      if (path.startsWith('http')) {
-        imageWidget = Image.network(path,
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur));
-      } else if (path.startsWith('/') ||
-          (path.length > 2 && path[1] == ':')) {
-        imageWidget = Image.file(File(path),
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur));
-      } else {
-        imageWidget = Image.asset(path,
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur));
-      }
-      return ClipRRect(
+    final source = diapo.imagePath?.trim();
+    if (source == null || source.isEmpty) {
+      return _buildImagePlaceholder(diapo, couleur);
+    }
+
+    if (_isHttpUrl(source)) {
+      return _wrapSlideImage(_buildNetworkImage(source, diapo, couleur));
+    }
+
+    if (_isFirebaseStorageReference(source)) {
+      return FutureBuilder<String>(
+        future: _resolveFirebaseStorageUrl(source),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return _wrapSlideImage(
+              _buildNetworkImage(snapshot.data!, diapo, couleur),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return _buildImagePlaceholder(diapo, couleur);
+          }
+
+          return _buildImageLoading(couleur);
+        },
+      );
+    }
+
+    if (_isLocalFilePath(source)) {
+      return _wrapSlideImage(
+        Image.file(
+          File(source),
+          height: 220,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
+        ),
+      );
+    }
+
+    return _wrapSlideImage(
+      Image.asset(
+        source,
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
+      ),
+    );
+  }
+
+  bool _isHttpUrl(String source) {
+    return source.startsWith('http://') || source.startsWith('https://');
+  }
+
+  bool _isLocalFilePath(String source) {
+    return source.startsWith('/') || (source.length > 2 && source[1] == ':');
+  }
+
+  bool _isFirebaseStorageReference(String source) {
+    return source.startsWith('gs://') || source.startsWith('series/');
+  }
+
+  Future<String> _resolveFirebaseStorageUrl(String source) {
+    final ref = source.startsWith('gs://')
+        ? FirebaseStorage.instance.refFromURL(source)
+        : FirebaseStorage.instance.ref(source);
+    return ref.getDownloadURL();
+  }
+
+  Widget _buildNetworkImage(String url, Diapositive diapo, Color couleur) {
+    return Image.network(
+      url,
+      height: 220,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
+      loadingBuilder: (_, child, progress) {
+        if (progress == null) return child;
+        return _buildImageLoading(couleur);
+      },
+    );
+  }
+
+  Widget _wrapSlideImage(Widget child) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(28),
+        bottomRight: Radius.circular(28),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildImageLoading(Color couleur) {
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(
+        color: couleur.withValues(alpha: 0.08),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(28),
           bottomRight: Radius.circular(28),
         ),
-        child: imageWidget,
-      );
-    }
-    return _buildImagePlaceholder(diapo, couleur);
+      ),
+      child: Center(child: CircularProgressIndicator(color: couleur)),
+    );
   }
 
   Widget _buildImagePlaceholder(Diapositive diapo, Color couleur) {
@@ -307,8 +404,11 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                     color: Colors.white.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.menu_book_rounded,
-                      size: 36, color: Colors.white),
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    size: 36,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Padding(
@@ -337,10 +437,9 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
   Widget _buildRichContent(BuildContext context, String contenu) {
     return Text(
       contenu,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            height: 1.7,
-            fontSize: 15,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.bodyMedium?.copyWith(height: 1.7, fontSize: 15),
     );
   }
 
@@ -371,9 +470,7 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF182018)
-              : const Color(0xFFF2FAF5),
+          color: isDark ? const Color(0xFF182018) : const Color(0xFFF2FAF5),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor, width: 1.5),
           boxShadow: [
@@ -424,8 +521,9 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                             : 'Sélectionnez toutes les bonnes réponses',
                         style: TextStyle(
                           fontSize: 10,
-                          color:
-                              AppConstants.primaryColor.withValues(alpha: 0.7),
+                          color: AppConstants.primaryColor.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],
@@ -443,10 +541,10 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                 child: Text(
                   question.texte,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -467,7 +565,8 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                       backgroundColor: AppConstants.primaryColor,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: _canValidate(diapo, question)
                         ? () => setState(() => _validated[diapo.id] = true)
@@ -541,14 +640,14 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
             onChanged: isValidated
                 ? null
                 : (checked) => setState(() {
-                      final newSet = Set<int>.from(selections);
-                      if (checked) {
-                        newSet.add(i);
-                      } else {
-                        newSet.remove(i);
-                      }
-                      _checklistSelections[diapo.id] = newSet;
-                    }),
+                    final newSet = Set<int>.from(selections);
+                    if (checked) {
+                      newSet.add(i);
+                    } else {
+                      newSet.remove(i);
+                    }
+                    _checklistSelections[diapo.id] = newSet;
+                  }),
           ),
       ],
     );
@@ -624,8 +723,9 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppConstants.primaryColor,
             side: const BorderSide(color: AppConstants.primaryColor),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           onPressed: () => setState(() {
             _validated.remove(diapo.id);
@@ -668,7 +768,8 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                   foregroundColor: couleur,
                   side: BorderSide(color: couleur),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: isFirst ? null : () => _goToPage(_currentPage - 1),
@@ -683,19 +784,23 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppConstants.primaryColor,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => Navigator.of(context).pop(),
                     )
                   : FilledButton.icon(
-                      icon: const Icon(Icons.arrow_forward_ios_rounded,
-                          size: 15),
+                      icon: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 15,
+                      ),
                       label: const Text('Suivant'),
                       style: FilledButton.styleFrom(
                         backgroundColor: couleur,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                       onPressed: () => _goToPage(_currentPage + 1),
@@ -750,16 +855,22 @@ class _QcmOption extends StatelessWidget {
         textColor = Colors.green.shade800;
         letterBg = Colors.green;
         letterColor = Colors.white;
-        trailingIcon =
-            const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20);
+        trailingIcon = const Icon(
+          Icons.check_circle_rounded,
+          color: Colors.green,
+          size: 20,
+        );
       } else if (isUserAnswer && !isCorrect) {
         borderColor = Colors.red;
         bgColor = Colors.red.withValues(alpha: 0.07);
         textColor = Colors.red.shade800;
         letterBg = Colors.red;
         letterColor = Colors.white;
-        trailingIcon =
-            const Icon(Icons.cancel_rounded, color: Colors.red, size: 20);
+        trailingIcon = const Icon(
+          Icons.cancel_rounded,
+          color: Colors.red,
+          size: 20,
+        );
       }
     } else if (isSelected) {
       borderColor = AppConstants.primaryColor;
@@ -808,11 +919,7 @@ class _QcmOption extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 14,
-                  height: 1.3,
-                ),
+                style: TextStyle(color: textColor, fontSize: 14, height: 1.3),
               ),
             ),
             if (trailingIcon != null) ...[
@@ -876,14 +983,14 @@ class _ChecklistOption extends StatelessWidget {
       child: CheckboxListTile(
         value: isChecked,
         onChanged: isValidated ? null : (v) => onChanged?.call(v ?? false),
-        title: Text(label,
-            style: TextStyle(
-                color: textColor, fontSize: 14, height: 1.3)),
+        title: Text(
+          label,
+          style: TextStyle(color: textColor, fontSize: 14, height: 1.3),
+        ),
         activeColor: AppConstants.primaryColor,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         dense: true,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

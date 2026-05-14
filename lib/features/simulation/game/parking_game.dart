@@ -38,8 +38,9 @@ class ParkingGame extends FlameGame {
     );
 
     // 2. Création du Joystick (en bas à gauche)
-    final knobPaint = Paint()..color = Colors.white.withOpacity(0.5);
-    final backgroundPaint = Paint()..color = Colors.white.withOpacity(0.1);
+    final knobPaint = Paint()..color = Colors.white.withValues(alpha: 0.5);
+    final backgroundPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1);
 
     joystick = JoystickComponent(
       knob: CircleComponent(radius: 25, paint: knobPaint),

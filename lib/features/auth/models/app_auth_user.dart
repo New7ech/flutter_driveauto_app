@@ -20,6 +20,7 @@ class AppAuthUser {
   final String provider;
   final DateTime createdAt;
   final DateTime lastLoginAt;
+  static const String defaultRole = 'apprenant';
 
   AppAuthUser copyWith({
     String? id,
@@ -77,9 +78,8 @@ class AppAuthUser {
     );
   }
 
-  static String inferRole(String email) {
-    final normalizedEmail = email.trim().toLowerCase();
-    return normalizedEmail.contains('admin') ? 'admin' : 'apprenant';
+  static String inferRole(String _) {
+    return defaultRole;
   }
 
   static String fallbackDisplayName(String email) {

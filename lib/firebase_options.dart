@@ -64,7 +64,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1069717813729',
     projectId: 'driveauto-ed6b7',
     storageBucket: 'driveauto-ed6b7.firebasestorage.app',
-    iosClientId: '1069717813729-u6dgj3l7ahj8p26vg4ttt4nmcs81gbfc.apps.googleusercontent.com',
+    iosClientId:
+        '1069717813729-u6dgj3l7ahj8p26vg4ttt4nmcs81gbfc.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterDriveautoApp',
   );
 
@@ -74,7 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1069717813729',
     projectId: 'driveauto-ed6b7',
     storageBucket: 'driveauto-ed6b7.firebasestorage.app',
-    iosClientId: '1069717813729-u6dgj3l7ahj8p26vg4ttt4nmcs81gbfc.apps.googleusercontent.com',
+    iosClientId:
+        '1069717813729-u6dgj3l7ahj8p26vg4ttt4nmcs81gbfc.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterDriveautoApp',
   );
 

@@ -22,7 +22,8 @@ class CarPlayer extends PositionComponent {
   CarPlayer({required this.joystick}) : super(size: Vector2(30, 60)) {
     anchor = Anchor.center;
     _carPaint = Paint()..color = Colors.blue.shade700;
-    _windowPaint = Paint()..color = Colors.lightBlueAccent.withOpacity(0.8);
+    _windowPaint = Paint()
+      ..color = Colors.lightBlueAccent.withValues(alpha: 0.8);
     _lightsPaint = Paint()..color = Colors.yellow;
   }
 

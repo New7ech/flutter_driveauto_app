@@ -65,6 +65,7 @@ Future<void> main() async {
   await Hive.openBox(AppConstants.hiveAuthUsersBox);
   await Hive.openBox(AppConstants.hiveAuthSessionBox);
   await Hive.openBox(AppConstants.hiveSeriesBox);
+  await Hive.openBox(AppConstants.hiveSeriesProgressBox);
 
   try {
     await Firebase.initializeApp(
@@ -93,16 +94,13 @@ class DriveAutoApp extends ConsumerWidget {
     // Déconnexion automatique si l'admin supprime le profil de l'apprenant.
     // On détecte la transition exists:true → exists:false pour éviter les
     // faux positifs juste après l'inscription (doc pas encore créé).
-    ref.listen<AsyncValue<bool>>(
-      userDeletionWatcherProvider,
-      (previous, next) {
-        final wasExisting = previous?.valueOrNull;
-        final isExisting = next.valueOrNull;
-        if (wasExisting == true && isExisting == false) {
-          ref.read(authControllerProvider.notifier).logout();
-        }
-      },
-    );
+    ref.listen<AsyncValue<bool>>(userDeletionWatcherProvider, (previous, next) {
+      final wasExisting = previous?.valueOrNull;
+      final isExisting = next.valueOrNull;
+      if (wasExisting == true && isExisting == false) {
+        ref.read(authControllerProvider.notifier).logout();
+      }
+    });
 
     ref.listen(connectivityProvider, (previous, next) {
       if (!next.hasValue) {
@@ -150,11 +148,11 @@ class DriveAutoApp extends ConsumerWidget {
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   final currentUser = ref.watch(currentAuthUserProvider);
+  final userRole = ref.watch(userRoleProvider);
   final landingRoute = ref.watch(authLandingRouteProvider);
   final approvalStatus = ref.watch(userApprovalProvider);
 
   const publicRoutes = <String>{
-    AppConstants.routeAuthLoading,
     AppConstants.routeLogin,
     AppConstants.routeRegister,
     AppConstants.routeForgotPassword,
@@ -169,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoadingRoute = location == AppConstants.routeAuthLoading;
       final isPendingRoute = location == AppConstants.routePendingApproval;
       final isAuthenticated = currentUser != null;
-      final isApprenant = currentUser?.role == 'apprenant';
+      final isApprenant = userRole == 'apprenant';
       final isAdminRoute = location == AppConstants.routeAdmin;
 
       // 1. Auth en cours de chargement, ou approbation en cours pour un apprenant.
@@ -206,7 +204,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isPendingRoute) return landingRoute;
 
       // 6. Protection de la route admin.
-      if (isAdminRoute && currentUser.role != 'admin') {
+      if (isAdminRoute && userRole != 'admin') {
         return AppConstants.routeDashboard;
       }
 
@@ -337,7 +335,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               return ExamenResultatsScreen(examenState: examenState);
             },
           ),
-        ],
+        ], 
       ),
       GoRoute(
         path: AppConstants.routePendingApproval,

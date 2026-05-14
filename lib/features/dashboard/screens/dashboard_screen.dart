@@ -21,67 +21,77 @@ final userProgressProvider = FutureProvider<UserProgress?>((ref) async {
 });
 
 // Annonces actives depuis Firestore (filtre côté Dart pour éviter l'index composite)
-final annoncesActiveProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return FirebaseFirestore.instance
+final annoncesActiveProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
+  if (firestore == null) return const Stream.empty();
+  return firestore
       .collection('annonces')
       .orderBy('dateCreation', descending: true)
       .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-          .where((d) => d['active'] as bool? ?? true)
-          .toList());
+      .map(
+        (snap) => snap.docs
+            .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+            .where((d) => d['active'] as bool? ?? true)
+            .toList(),
+      );
 });
 
 // Examens officiels proposés et actifs (filtre Dart pour éviter l'index composite)
 final examensProposesActiveProvider =
     StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('examens_proposes')
-      .orderBy('dateCreation', descending: true)
-      .snapshots()
-      .map((snap) {
-    final now = DateTime.now();
-    return snap.docs
-        .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-        .where((d) {
-          if (!(d['actif'] as bool? ?? true)) return false;
-          final dl = d['dateLimite'];
-          if (dl == null) return true;
-          final date = dl is Timestamp ? dl.toDate() : null;
-          return date == null || date.isAfter(now);
-        })
-        .toList();
-  });
-});
+      final firestore = ref.watch(firebaseFirestoreProvider);
+      if (firestore == null) return const Stream.empty();
+      return firestore
+          .collection('examens_proposes')
+          .orderBy('dateCreation', descending: true)
+          .snapshots()
+          .map((snap) {
+            final now = DateTime.now();
+            return snap.docs
+                .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+                .where((d) {
+                  if (!(d['actif'] as bool? ?? true)) return false;
+                  final dl = d['dateLimite'];
+                  if (dl == null) return true;
+                  final date = dl is Timestamp ? dl.toDate() : null;
+                  return date == null || date.isAfter(now);
+                })
+                .toList();
+          });
+    });
 
 // Séances pratiques de l'apprenant connecté (filtre Dart pour éviter l'index composite)
-final seancesApprenantProvider =
-    StreamProvider<List<Map<String, dynamic>>>((ref) {
+final seancesApprenantProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
+  final firestore = ref.watch(firebaseFirestoreProvider);
   final uid = ref.watch(currentAuthUserProvider)?.id;
-  if (uid == null) return const Stream.empty();
-  return FirebaseFirestore.instance
+  if (firestore == null || uid == null) return const Stream.empty();
+  return firestore
       .collection('seances_pratiques')
       .where('apprenantId', isEqualTo: uid)
       .snapshots()
       .map((snap) {
-    final now = DateTime.now();
-    return snap.docs
-        .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-        .where((d) {
-          final ts = d['dateSeance'];
-          if (ts == null) return false;
-          final date = ts is Timestamp ? ts.toDate() : null;
-          if (date == null) return false;
-          final statut = d['statut'] as String? ?? 'planifiee';
-          return statut == 'planifiee' && date.isAfter(now);
-        })
-        .toList()
-      ..sort((a, b) {
-        final ta = (a['dateSeance'] as Timestamp).toDate();
-        final tb = (b['dateSeance'] as Timestamp).toDate();
-        return ta.compareTo(tb);
+        final now = DateTime.now();
+        return snap.docs
+            .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+            .where((d) {
+              final ts = d['dateSeance'];
+              if (ts == null) return false;
+              final date = ts is Timestamp ? ts.toDate() : null;
+              if (date == null) return false;
+              final statut = d['statut'] as String? ?? 'planifiee';
+              return statut == 'planifiee' && date.isAfter(now);
+            })
+            .toList()
+          ..sort((a, b) {
+            final ta = (a['dateSeance'] as Timestamp).toDate();
+            final tb = (b['dateSeance'] as Timestamp).toDate();
+            return ta.compareTo(tb);
+          });
       });
-  });
 });
 
 class DashboardScreen extends ConsumerWidget {
@@ -104,7 +114,12 @@ class DashboardScreen extends ConsumerWidget {
             return _buildEmptyState(context, ref, user, authControllerState);
           }
           return _buildDashboardContent(
-              context, ref, progress, user, authControllerState);
+            context,
+            ref,
+            progress,
+            user,
+            authControllerState,
+          );
         },
       ),
     );
@@ -125,8 +140,8 @@ class DashboardScreen extends ConsumerWidget {
     final name = user.displayName.isNotEmpty
         ? user.displayName
         : user.email.isNotEmpty
-            ? user.email.split('@').first
-            : 'Apprenant';
+        ? user.email.split('@').first
+        : 'Apprenant';
     return name.trim().split(' ').first;
   }
 
@@ -135,8 +150,8 @@ class DashboardScreen extends ConsumerWidget {
     final name = user.displayName.isNotEmpty
         ? user.displayName
         : user.email.isNotEmpty
-            ? user.email.split('@').first
-            : 'Apprenant';
+        ? user.email.split('@').first
+        : 'Apprenant';
     final parts = name.trim().split(' ');
     if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
@@ -149,7 +164,10 @@ class DashboardScreen extends ConsumerWidget {
   // ────────────────────────────────────────────────────────
 
   Widget _buildGradientHeader(
-      BuildContext context, WidgetRef ref, AppAuthUser? user) {
+    BuildContext context,
+    WidgetRef ref,
+    AppAuthUser? user,
+  ) {
     final hour = DateTime.now().hour;
     return Container(
       decoration: const BoxDecoration(
@@ -173,8 +191,11 @@ class DashboardScreen extends ConsumerWidget {
               // Top bar : logo + profil + logout
               Row(
                 children: [
-                  const Icon(Icons.directions_car_rounded,
-                      color: Colors.white, size: 26),
+                  const Icon(
+                    Icons.directions_car_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'DriveAuto',
@@ -187,14 +208,20 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.manage_accounts_rounded,
-                        color: Colors.white70, size: 22),
+                    icon: const Icon(
+                      Icons.manage_accounts_rounded,
+                      color: Colors.white70,
+                      size: 22,
+                    ),
                     tooltip: 'Mon profil',
                     onPressed: () => _showProfileSheet(context, ref, user),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.logout_rounded,
-                        color: Colors.white70, size: 22),
+                    icon: const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.white70,
+                      size: 22,
+                    ),
                     tooltip: 'Se déconnecter',
                     onPressed: () {
                       ref.read(authControllerProvider.notifier).logout();
@@ -216,8 +243,9 @@ class DashboardScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: 0.2),
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            width: 2),
+                          color: Colors.white.withValues(alpha: 0.5),
+                          width: 2,
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -261,8 +289,10 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               // Bannière motivationnelle
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(14),
@@ -292,7 +322,10 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   void _showProfileSheet(
-      BuildContext context, WidgetRef ref, AppAuthUser? user) {
+    BuildContext context,
+    WidgetRef ref,
+    AppAuthUser? user,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -327,7 +360,11 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 if (user != null) ...[
                   _buildEmailVerificationCard(
-                      context, ref, user, authControllerState),
+                    context,
+                    ref,
+                    user,
+                    authControllerState,
+                  ),
                   const SizedBox(height: 20),
                 ],
                 _buildAnnoncesSection(context, ref),
@@ -338,18 +375,16 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 28),
                 Text(
                   'Commencer l\'apprentissage',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Choisissez une activité pour démarrer',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey.shade500),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 16),
                 _buildNavigationGrid(context),
@@ -372,8 +407,10 @@ class DashboardScreen extends ConsumerWidget {
     AppAuthUser? user,
     AsyncValue<void> authControllerState,
   ) {
-    final lessonPercent =
-        (progress.totalLessonsCompleted / 40.0).clamp(0.0, 1.0);
+    final lessonPercent = (progress.totalLessonsCompleted / 40.0).clamp(
+      0.0,
+      1.0,
+    );
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return RefreshIndicator(
@@ -392,7 +429,11 @@ class DashboardScreen extends ConsumerWidget {
               children: [
                 if (user != null) ...[
                   _buildEmailVerificationCard(
-                      context, ref, user, authControllerState),
+                    context,
+                    ref,
+                    user,
+                    authControllerState,
+                  ),
                   const SizedBox(height: 20),
                 ],
                 // Annonces
@@ -429,10 +470,9 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Sélectionnez une activité pour continuer',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: Colors.grey.shade500),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 16),
                 _buildNavigationGrid(context),
@@ -456,10 +496,10 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(fontWeight: FontWeight.bold, fontSize: 17),
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        fontSize: 17,
+      ),
     );
   }
 
@@ -473,8 +513,10 @@ class DashboardScreen extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (e, _) => Padding(
         padding: const EdgeInsets.only(bottom: 16),
-        child: Text('Erreur annonces : $e',
-            style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
+        child: Text(
+          'Erreur annonces : $e',
+          style: TextStyle(fontSize: 11, color: Colors.red.shade400),
+        ),
       ),
       data: (annonces) {
         if (annonces.isEmpty) return const SizedBox.shrink();
@@ -499,7 +541,7 @@ class DashboardScreen extends ConsumerWidget {
     final examensAsync = ref.watch(examensProposesActiveProvider);
     return examensAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (examens) {
         if (examens.isEmpty) return const SizedBox.shrink();
         return Column(
@@ -528,12 +570,11 @@ class DashboardScreen extends ConsumerWidget {
       data: (seances) {
         if (seances.isEmpty) {
           return const _SeanceVide(
-              message: 'Contactez l\'auto-école pour planifier une séance');
+            message: 'Contactez l\'auto-école pour planifier une séance',
+          );
         }
         return Column(
-          children: seances
-              .map((s) => _SeanceCard(data: s))
-              .toList(),
+          children: seances.map((s) => _SeanceCard(data: s)).toList(),
         );
       },
     );
@@ -544,12 +585,17 @@ class DashboardScreen extends ConsumerWidget {
   // ────────────────────────────────────────────────────────
 
   Widget _buildBarChart(
-      BuildContext context, bool isDark, UserProgress progress) {
+    BuildContext context,
+    bool isDark,
+    UserProgress progress,
+  ) {
     return Container(
       height: 180,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: BoxDecoration(
-        color: isDark ? AppConstants.cardColorDark : AppConstants.cardColorLight,
+        color: isDark
+            ? AppConstants.cardColorDark
+            : AppConstants.cardColorLight,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -566,8 +612,12 @@ class DashboardScreen extends ConsumerWidget {
           _buildBarChartItem(context, 0.4, 'Sem 1'),
           _buildBarChartItem(context, 0.7, 'Sem 2'),
           _buildBarChartItem(context, 0.5, 'Sem 3'),
-          _buildBarChartItem(context, progress.globalScore / 100.0, 'Global',
-              isHighlighted: true),
+          _buildBarChartItem(
+            context,
+            progress.globalScore / 100.0,
+            'Global',
+            isHighlighted: true,
+          ),
         ],
       ),
     );
@@ -602,11 +652,11 @@ class DashboardScreen extends ConsumerWidget {
               colors: isHighlighted
                   ? [
                       AppConstants.secondaryColor,
-                      AppConstants.secondaryColor.withValues(alpha: 0.5)
+                      AppConstants.secondaryColor.withValues(alpha: 0.5),
                     ]
                   : [
                       AppConstants.primaryColor,
-                      AppConstants.primaryColor.withValues(alpha: 0.5)
+                      AppConstants.primaryColor.withValues(alpha: 0.5),
                     ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -618,11 +668,10 @@ class DashboardScreen extends ConsumerWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight:
-                    isHighlighted ? FontWeight.bold : FontWeight.normal,
-                color: isHighlighted ? AppConstants.secondaryColor : null,
-                fontSize: 11,
-              ),
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+            color: isHighlighted ? AppConstants.secondaryColor : null,
+            fontSize: 11,
+          ),
         ),
       ],
     );
@@ -764,7 +813,8 @@ class DashboardScreen extends ConsumerWidget {
           color: AppConstants.primaryColor.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: AppConstants.primaryColor.withValues(alpha: 0.2)),
+            color: AppConstants.primaryColor.withValues(alpha: 0.2),
+          ),
         ),
         child: ListTile(
           leading: Container(
@@ -774,11 +824,16 @@ class DashboardScreen extends ConsumerWidget {
               color: AppConstants.primaryColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.verified_rounded,
-                color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.verified_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
           ),
-          title: const Text('Compte vérifié',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          title: const Text(
+            'Compte vérifié',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           subtitle: Text(
             '${user.displayName} • ${user.email}',
             overflow: TextOverflow.ellipsis,
@@ -792,8 +847,10 @@ class DashboardScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.orange.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -802,14 +859,16 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Colors.orange, size: 20),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
                     'Vérification de l\'email recommandée',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ],
@@ -879,8 +938,9 @@ class _SeanceVide extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.primaryColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: AppConstants.primaryColor.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -894,8 +954,11 @@ class _SeanceVide extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.calendar_month_rounded,
-                color: Colors.white, size: 22),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -914,8 +977,7 @@ class _SeanceCard extends StatelessWidget {
   const _SeanceCard({required this.data});
   final Map<String, dynamic> data;
 
-  DateTime get _date =>
-      (data['dateSeance'] as Timestamp).toDate();
+  DateTime get _date => (data['dateSeance'] as Timestamp).toDate();
   String get _moniteur => data['moniteur'] as String? ?? 'À définir';
   String get _lieu => data['lieu'] as String? ?? '';
   String get _notes => data['notes'] as String? ?? '';
@@ -936,8 +998,9 @@ class _SeanceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppConstants.primaryColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: AppConstants.primaryColor.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: AppConstants.primaryColor.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -954,8 +1017,11 @@ class _SeanceCard extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(Icons.directions_car_rounded,
-                    color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.directions_car_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -965,19 +1031,25 @@ class _SeanceCard extends StatelessWidget {
                     Text(
                       _fmt(_date),
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
                       'Moniteur : $_moniteur',
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600),
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppConstants.primaryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -998,12 +1070,16 @@ class _SeanceCard extends StatelessWidget {
             if (_lieu.isNotEmpty)
               Row(
                 children: [
-                  Icon(Icons.location_on_rounded,
-                      size: 13, color: Colors.grey.shade500),
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 13,
+                    color: Colors.grey.shade500,
+                  ),
                   const SizedBox(width: 4),
-                  Text(_lieu,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                  Text(
+                    _lieu,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
                 ],
               ),
             if (_notes.isNotEmpty) ...[
@@ -1011,9 +1087,10 @@ class _SeanceCard extends StatelessWidget {
               Text(
                 _notes,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                    fontStyle: FontStyle.italic),
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontStyle: FontStyle.italic,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -1088,18 +1165,20 @@ class _AnnonceCard extends StatelessWidget {
                 Text(
                   _titre,
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: _color),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: _color,
+                  ),
                 ),
                 if (_contenu.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     _contenu,
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade700,
-                        height: 1.4),
+                      fontSize: 12,
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1154,7 +1233,9 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
       _loading = true;
       _error = null;
     });
-    final ok = await ref.read(authControllerProvider.notifier).changePassword(
+    final ok = await ref
+        .read(authControllerProvider.notifier)
+        .changePassword(
           currentPassword: _currentPwCtrl.text,
           newPassword: _newPwCtrl.text,
         );
@@ -1242,13 +1323,17 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
                       Text(
                         user?.displayName ?? 'Apprenant',
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         user?.email ?? '',
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade500),
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -1268,8 +1353,11 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
                     color: AppConstants.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.lock_outline_rounded,
-                      color: AppConstants.primaryColor, size: 18),
+                  child: const Icon(
+                    Icons.lock_outline_rounded,
+                    color: AppConstants.primaryColor,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 const Text(
@@ -1305,7 +1393,8 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
               onToggle: () =>
                   setState(() => _obscureConfirm = !_obscureConfirm),
               onChanged: (_) => setState(() {}),
-              hasError: _confirmPwCtrl.text.isNotEmpty &&
+              hasError:
+                  _confirmPwCtrl.text.isNotEmpty &&
                   _confirmPwCtrl.text != _newPwCtrl.text,
             ),
             if (_confirmPwCtrl.text.isNotEmpty &&
@@ -1338,7 +1427,9 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.check_rounded, size: 18),
               label: Text(_loading ? 'Enregistrement…' : 'Enregistrer'),
@@ -1346,7 +1437,8 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
                 backgroundColor: AppConstants.primaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onPressed: (_valid && !_loading) ? _submit : null,
             ),
@@ -1370,8 +1462,11 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: const Icon(Icons.lock_rounded,
-            size: 18, color: AppConstants.primaryColor),
+        prefixIcon: const Icon(
+          Icons.lock_rounded,
+          size: 18,
+          color: AppConstants.primaryColor,
+        ),
         suffixIcon: IconButton(
           icon: Icon(
             obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
@@ -1385,23 +1480,26 @@ class _ProfileSheetState extends ConsumerState<_ProfileSheet> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade400 : Colors.grey.shade300),
+            color: hasError ? Colors.red.shade400 : Colors.grey.shade300,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-              color: hasError ? Colors.red.shade400 : Colors.grey.shade300),
+            color: hasError ? Colors.red.shade400 : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-              color: hasError
-                  ? Colors.red.shade400
-                  : AppConstants.primaryColor,
-              width: 2),
+            color: hasError ? Colors.red.shade400 : AppConstants.primaryColor,
+            width: 2,
+          ),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     );
   }
@@ -1439,7 +1537,8 @@ class _ExamenProposeApprenant extends StatelessWidget {
         color: AppConstants.secondaryColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppConstants.secondaryColor.withValues(alpha: 0.25)),
+          color: AppConstants.secondaryColor.withValues(alpha: 0.25),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1456,8 +1555,11 @@ class _ExamenProposeApprenant extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(Icons.school_rounded,
-                    color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.school_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1467,20 +1569,26 @@ class _ExamenProposeApprenant extends StatelessWidget {
                     Text(
                       _titre,
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 13),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       '$_nbQuestions questions • $_duree min',
-                      style:
-                          TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppConstants.secondaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -1498,19 +1606,22 @@ class _ExamenProposeApprenant extends StatelessWidget {
           ),
           if (_description.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(_description,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+            Text(
+              _description,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
           if (_message.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               '"$_message"',
               style: TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                  color: AppConstants.secondaryColor.withValues(alpha: 0.8)),
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: AppConstants.secondaryColor.withValues(alpha: 0.8),
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1519,13 +1630,15 @@ class _ExamenProposeApprenant extends StatelessWidget {
             const SizedBox(height: 6),
             Row(
               children: [
-                Icon(Icons.event_rounded,
-                    size: 12, color: Colors.grey.shade500),
+                Icon(
+                  Icons.event_rounded,
+                  size: 12,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Limite : ${_fmtDate(dl)}',
-                  style:
-                      TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ],
             ),

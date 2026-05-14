@@ -20,8 +20,7 @@ class ExamenResultatsScreen extends ConsumerStatefulWidget {
       _ExamenResultatsScreenState();
 }
 
-class _ExamenResultatsScreenState
-    extends ConsumerState<ExamenResultatsScreen> {
+class _ExamenResultatsScreenState extends ConsumerState<ExamenResultatsScreen> {
   bool _afficherCorrection = false;
 
   @override
@@ -42,8 +41,7 @@ class _ExamenResultatsScreenState
         'total': s.total,
         'pourcentage': s.total == 0
             ? 0.0
-            : (s.nombreReponsesCorrectes / s.total * 100)
-                .roundToDouble(),
+            : (s.nombreReponsesCorrectes / s.total * 100).roundToDouble(),
         'reussi': s.estRecu,
         'datePassage': FieldValue.serverTimestamp(),
       });
@@ -63,10 +61,13 @@ class _ExamenResultatsScreenState
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Résultats',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor:
-            recu ? AppConstants.primaryColor : AppConstants.secondaryColor,
+        title: const Text(
+          'Résultats',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: recu
+            ? AppConstants.primaryColor
+            : AppConstants.secondaryColor,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         elevation: 0,
@@ -107,10 +108,10 @@ class _ExamenResultatsScreenState
     double pct,
     bool recu,
   ) {
-    final couleur =
-        recu ? AppConstants.primaryColor : AppConstants.secondaryColor;
-    final lightColor =
-        recu ? const Color(0xFF007A4D) : const Color(0xFF8B0000);
+    final couleur = recu
+        ? AppConstants.primaryColor
+        : AppConstants.secondaryColor;
+    final lightColor = recu ? const Color(0xFF007A4D) : const Color(0xFF8B0000);
 
     return Container(
       width: double.infinity,
@@ -129,10 +130,7 @@ class _ExamenResultatsScreenState
       child: Column(
         children: [
           // Verdict + emoji
-          Text(
-            recu ? '🎉' : '😔',
-            style: const TextStyle(fontSize: 60),
-          ),
+          Text(recu ? '🎉' : '😔', style: const TextStyle(fontSize: 60)),
           const SizedBox(height: 10),
           Text(
             recu ? 'ADMIS(E)' : 'RECALÉ(E)',
@@ -194,8 +192,9 @@ class _ExamenResultatsScreenState
                     value: pct,
                     minHeight: 12,
                     backgroundColor: Colors.white.withValues(alpha: 0.28),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.white,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -224,8 +223,7 @@ class _ExamenResultatsScreenState
           ),
           const SizedBox(height: 14),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
@@ -255,8 +253,7 @@ class _ExamenResultatsScreenState
   Widget _buildStatRow(BuildContext context, ExamenState state) {
     final incorrect =
         state.reponsesUtilisateur.length - state.nombreReponsesCorrectes;
-    final nonRepondu =
-        state.total - state.reponsesUtilisateur.length;
+    final nonRepondu = state.total - state.reponsesUtilisateur.length;
 
     return Row(
       children: [
@@ -288,8 +285,7 @@ class _ExamenResultatsScreenState
   // ACTIONS
   // ─────────────────────────────────────────────────────────────────────
 
-  Widget _buildActionsRow(
-      BuildContext context, ExamenState state, bool recu) {
+  Widget _buildActionsRow(BuildContext context, ExamenState state, bool recu) {
     return Row(
       children: [
         Expanded(
@@ -301,16 +297,12 @@ class _ExamenResultatsScreenState
               side: const BorderSide(color: AppConstants.primaryColor),
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             onPressed: () {
-              ref
-                  .read(examenProvider.notifier)
-                  .reinitialiser(
-                    ref.read(seriesRemoteProvider).valueOrNull ??
-                        ref.read(seriesProvider),
-                  );
-              context.go('/dashboard');
+              ref.read(examenProvider.notifier).reset();
+              context.go(AppConstants.routeDashboard);
             },
           ),
         ),
@@ -338,21 +330,21 @@ class _ExamenResultatsScreenState
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: () {
-                  ref
-                      .read(examenProvider.notifier)
-                      .reinitialiser(
-                    ref.read(seriesRemoteProvider).valueOrNull ??
-                        ref.read(seriesProvider),
-                  );
-                  context.go('/examen');
+                  // reset() vide les questions → la page de démarrage s'affiche
+                  // → l'utilisateur clique "Commencer" → timer démarré proprement.
+                  ref.read(examenProvider.notifier).reset();
+                  context.go(AppConstants.routeExamen);
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 13),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.refresh_rounded,
-                          color: Colors.white, size: 18),
+                      Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Réessayer',
@@ -378,21 +370,23 @@ class _ExamenResultatsScreenState
 
   Widget _buildCorrectionToggle(BuildContext context) {
     return GestureDetector(
-      onTap: () =>
-          setState(() => _afficherCorrection = !_afficherCorrection),
+      onTap: () => setState(() => _afficherCorrection = !_afficherCorrection),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: AppConstants.primaryColor.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: AppConstants.primaryColor.withValues(alpha: 0.2)),
+            color: AppConstants.primaryColor.withValues(alpha: 0.2),
+          ),
         ),
         child: Row(
           children: [
-            const Icon(Icons.fact_check_rounded,
-                color: AppConstants.primaryColor, size: 20),
+            const Icon(
+              Icons.fact_check_rounded,
+              color: AppConstants.primaryColor,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -431,10 +425,9 @@ class _ExamenResultatsScreenState
         const SizedBox(height: 20),
         Text(
           'Correction détaillée',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         for (var i = 0; i < state.questions.length; i++)
@@ -500,7 +493,9 @@ class _ExamenResultatsScreenState
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(7),
@@ -517,7 +512,9 @@ class _ExamenResultatsScreenState
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -543,10 +540,7 @@ class _ExamenResultatsScreenState
                 Flexible(
                   child: Text(
                     '${question.serieEmoji} ${question.serieTitre}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                     textAlign: TextAlign.right,
@@ -583,13 +577,17 @@ class _ExamenResultatsScreenState
                   color: Colors.blue.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.15)),
+                    color: Colors.blue.withValues(alpha: 0.15),
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.info_outline_rounded,
-                        size: 16, color: Colors.blue),
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: Colors.blue,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

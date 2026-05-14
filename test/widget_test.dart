@@ -13,4 +13,15 @@ void main() {
 
     expect(find.text('Verification de votre session...'), findsOneWidget);
   });
+
+  testWidgets('DriveAutoApp redirige vers la connexion sans session', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ProviderScope(child: DriveAutoApp()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(find.text('Se connecter'), findsOneWidget);
+  });
 }

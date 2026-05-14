@@ -44,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    _navigateBasedOnRole(user);
+    await _navigateBasedOnRole(user);
   }
 
   Future<void> _onGoogleLogin() async {
@@ -55,11 +55,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    _navigateBasedOnRole(user);
+    await _navigateBasedOnRole(user);
   }
 
-  void _navigateBasedOnRole(AppAuthUser user) {
-    if (user.role == 'admin') {
+  Future<void> _navigateBasedOnRole(AppAuthUser user) async {
+    var role = user.role;
+    try {
+      role =
+          await ref
+              .read(userProfileRoleProvider.future)
+              .timeout(const Duration(seconds: 2)) ??
+          user.role;
+    } catch (_) {
+      role = user.role;
+    }
+
+    if (!mounted) return;
+
+    if (role == 'admin') {
       context.go(AppConstants.routeAdmin);
       return;
     }

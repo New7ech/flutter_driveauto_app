@@ -32,21 +32,24 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
   void _demarrerTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() {
-        if (_secondesRestantes > 0) {
-          _secondesRestantes--;
-        } else {
-          _terminerExamen();
-        }
-      });
+      if (_secondesRestantes <= 0) {
+        _terminerExamen();
+        return;
+      }
+
+      setState(() => _secondesRestantes--);
+      if (_secondesRestantes <= 0) {
+        _terminerExamen();
+      }
     });
   }
 
   void _terminerExamen() {
     _timer?.cancel();
+    _timer = null;
     final state = ref.read(examenProvider);
-    if (state.questions.isEmpty) return;
-    context.push('/examen/resultats', extra: state);
+    if (!mounted || state.questions.isEmpty) return;
+    context.push(AppConstants.routeExamenResultats, extra: state);
   }
 
   void _quitterExamen() {
@@ -80,9 +83,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
     }
 
     if (examenState.questions.isEmpty) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final question = examenState.questions[examenState.indexActuel];
@@ -104,12 +105,13 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Examen blanc',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text(
+                'Examen blanc',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               Text(
                 '${examenState.reponsesUtilisateur.length} / $total réponses',
-                style:
-                    const TextStyle(fontSize: 11, color: Colors.white70),
+                style: const TextStyle(fontSize: 11, color: Colors.white70),
               ),
             ],
           ),
@@ -128,7 +130,9 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 5),
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: _secondesRestantes <= 180
                         ? Colors.red.withValues(alpha: 0.25)
@@ -232,8 +236,10 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_rounded,
-                                color: Colors.white),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: Colors.white,
+                            ),
                             onPressed: () => Navigator.of(context).maybePop(),
                           ),
                           const Spacer(),
@@ -249,8 +255,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: const Center(
-                          child:
-                              Text('🎓', style: TextStyle(fontSize: 46)),
+                          child: Text('🎓', style: TextStyle(fontSize: 46)),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -294,10 +299,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                 Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        AppConstants.primaryColor,
-                        Color(0xFF005C38),
-                      ],
+                      colors: [AppConstants.primaryColor, Color(0xFF005C38)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -316,9 +318,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
                       onTap: () {
-                        ref
-                            .read(examenProvider.notifier)
-                            .initialiser(series);
+                        ref.read(examenProvider.notifier).initialiser(series);
                         setState(() {
                           _examenDemarre = true;
                           _secondesRestantes = _dureeExamenMinutes * 60;
@@ -330,8 +330,11 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.play_arrow_rounded,
-                                color: Colors.white, size: 24),
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'Commencer l\'examen',
@@ -351,10 +354,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                 Center(
                   child: Text(
                     'Les questions sont mélangées aléatoirement',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                   ),
                 ),
               ]),
@@ -414,10 +414,11 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
               _buildInfoRow(context, infos[i]),
               if (i < infos.length - 1)
                 Divider(
-                    height: 1,
-                    indent: 16,
-                    endIndent: 16,
-                    color: Colors.grey.shade200),
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: Colors.grey.shade200,
+                ),
             ],
           ],
         ),
@@ -440,8 +441,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Text(info.label,
-                style: const TextStyle(fontSize: 14)),
+            child: Text(info.label, style: const TextStyle(fontSize: 14)),
           ),
           Text(
             info.value,
@@ -470,8 +470,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
         children: [
           // Numéro
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppConstants.primaryColor,
               borderRadius: BorderRadius.circular(8),
@@ -488,15 +487,11 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
           const SizedBox(width: 8),
           Text(
             '/ $total',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
           ),
           const Spacer(),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: AppConstants.primaryColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
@@ -510,10 +505,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                   constraints: const BoxConstraints(maxWidth: 120),
                   child: Text(
                     serieTitre,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -540,21 +532,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Image / placeholder
-        if (diapo.imagePath != null && diapo.imagePath!.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
-              diapo.imagePath!,
-              height: 150,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, e, s) =>
-                  _buildImagePlaceholder(question),
-            ),
-          )
-        else
-          _buildImagePlaceholder(question),
+        _buildQuestionImage(question),
 
         const SizedBox(height: 18),
 
@@ -589,10 +567,10 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
           child: Text(
             q.texte,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              height: 1.4,
+            ),
           ),
         ),
         const SizedBox(height: 18),
@@ -627,13 +605,38 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
         ),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-            color: AppConstants.primaryColor.withValues(alpha: 0.15)),
+          color: AppConstants.primaryColor.withValues(alpha: 0.15),
+        ),
       ),
       child: Center(
-        child: Text(question.serieEmoji,
-            style: const TextStyle(fontSize: 38)),
+        child: Text(question.serieEmoji, style: const TextStyle(fontSize: 38)),
       ),
     );
+  }
+
+  Widget _buildQuestionImage(QuestionExamen question) {
+    final imagePath = question.diapositive.imagePath;
+    if (imagePath == null || imagePath.isEmpty) {
+      return _buildImagePlaceholder(question);
+    }
+
+    final image = imagePath.startsWith('http')
+        ? Image.network(
+            imagePath,
+            height: 150,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
+          )
+        : Image.asset(
+            imagePath,
+            height: 150,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
+          );
+
+    return ClipRRect(borderRadius: BorderRadius.circular(14), child: image);
   }
 
   // ────────────────────────────────────────────────────────────────────
@@ -673,10 +676,10 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                     child: LinearProgressIndicator(
                       value: total == 0 ? 0 : nbReponses / total,
                       minHeight: 5,
-                      backgroundColor:
-                          Colors.grey.shade200,
+                      backgroundColor: Colors.grey.shade200,
                       valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppConstants.primaryColor),
+                        AppConstants.primaryColor,
+                      ),
                     ),
                   ),
                 ),
@@ -702,14 +705,15 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                       foregroundColor: AppConstants.primaryColor,
                       side: const BorderSide(color: AppConstants.primaryColor),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: examenState.estPremierQuestion
                         ? null
                         : () => ref
-                            .read(examenProvider.notifier)
-                            .questionPrecedente(),
+                              .read(examenProvider.notifier)
+                              .questionPrecedente(),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -728,8 +732,9 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: AppConstants.secondaryColor
-                                    .withValues(alpha: 0.35),
+                                color: AppConstants.secondaryColor.withValues(
+                                  alpha: 0.35,
+                                ),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -740,17 +745,17 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                             borderRadius: BorderRadius.circular(12),
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
-                              onTap: () =>
-                                  _confirmerSoumission(context),
+                              onTap: () => _confirmerSoumission(context),
                               child: const Padding(
-                                padding: EdgeInsets.symmetric(
-                                    vertical: 13),
+                                padding: EdgeInsets.symmetric(vertical: 13),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.send_rounded,
-                                        color: Colors.white, size: 16),
+                                    Icon(
+                                      Icons.send_rounded,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                     SizedBox(width: 6),
                                     Text(
                                       'Soumettre',
@@ -767,15 +772,16 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
                         )
                       : FilledButton.icon(
                           icon: const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 15),
+                            Icons.arrow_forward_ios_rounded,
+                            size: 15,
+                          ),
                           label: const Text('Suivant'),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppConstants.primaryColor,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           onPressed: () => ref
                               .read(examenProvider.notifier)
@@ -799,9 +805,12 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: const Text('Quitter l\'examen ?',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Quitter l\'examen ?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             content: const Text(
               'Votre progression sera perdue. Voulez-vous vraiment quitter ?',
             ),
@@ -812,9 +821,11 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppConstants.secondaryColor,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
+                  backgroundColor: AppConstants.secondaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Oui, quitter'),
               ),
@@ -828,13 +839,17 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
     final state = ref.read(examenProvider);
     final nonRepondues = state.total - state.reponsesUtilisateur.length;
 
-    final confirmer = await showDialog<bool>(
+    final confirmer =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: const Text('Soumettre l\'examen ?',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Text(
+              'Soumettre l\'examen ?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             content: Text(
               nonRepondues > 0
                   ? 'Il vous reste $nonRepondues question(s) sans réponse. Voulez-vous quand même soumettre ?'
@@ -847,9 +862,11 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppConstants.primaryColor,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
+                  backgroundColor: AppConstants.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Soumettre'),
               ),
@@ -934,8 +951,7 @@ class _ExamenOption extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 15,
                   color: isSelected ? couleur : null,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   height: 1.3,
                 ),
               ),
@@ -943,8 +959,11 @@ class _ExamenOption extends StatelessWidget {
             if (isSelected)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
-                child: Icon(Icons.check_circle_rounded,
-                    color: couleur, size: 20),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  color: couleur,
+                  size: 20,
+                ),
               ),
           ],
         ),
@@ -956,11 +975,12 @@ class _ExamenOption extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _Info {
-  const _Info(
-      {required this.icon,
-      required this.label,
-      required this.value,
-      required this.color});
+  const _Info({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   final IconData icon;
   final String label;

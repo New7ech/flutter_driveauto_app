@@ -12,7 +12,6 @@ class PendingApprovalScreen extends ConsumerWidget {
     final user = ref.watch(currentAuthUserProvider);
 
     return Scaffold(
-      backgroundColor: AppConstants.backgroundColorLight,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -64,7 +63,9 @@ class PendingApprovalScreen extends ConsumerWidget {
               if (user?.email != null)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(10),
@@ -73,8 +74,11 @@ class PendingApprovalScreen extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.email_outlined,
-                          size: 16, color: Colors.grey.shade500),
+                      Icon(
+                        Icons.email_outlined,
+                        size: 16,
+                        color: Colors.grey.shade500,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         user!.email,

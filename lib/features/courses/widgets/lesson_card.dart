@@ -31,7 +31,7 @@ class LessonCard extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  color: AppConstants.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: lecon.imageUrl != null && lecon.imageUrl!.isNotEmpty

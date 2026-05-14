@@ -47,8 +47,8 @@ class SerieNotifier extends StateNotifier<List<Serie>> {
 
 final seriesNotifierProvider =
     StateNotifierProvider<SerieNotifier, List<Serie>>((ref) {
-  return SerieNotifier(ref.watch(serieRepositoryProvider));
-});
+      return SerieNotifier(ref.watch(serieRepositoryProvider));
+    });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Providers de données (lecture — utilisés par toute l'app)
@@ -142,8 +142,13 @@ class ExamenState {
   int get total => questions.length;
   double get pourcentage => total == 0 ? 0 : nombreReponsesCorrectes / total;
 
-  // Seuil de réussite : 35/40 = 87,5 %
-  bool get estRecu => total > 0 && nombreReponsesCorrectes >= (total * 0.875).ceil();
+  // Seuil fixe : 35/40 (règle officielle). Si < 40 questions disponibles,
+  // on applique 87,5 % arrondi au supérieur.
+  bool get estRecu {
+    if (total == 0) return false;
+    final seuil = total >= 40 ? 35 : (total * 0.875).ceil();
+    return nombreReponsesCorrectes >= seuil;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -178,9 +183,7 @@ class ExamenNotifier extends StateNotifier<ExamenState> {
     toutesQuestions.shuffle(Random());
 
     // Prendre au maximum 40 questions
-    final selection = toutesQuestions
-        .take(_nombreQuestionsExamen)
-        .toList();
+    final selection = toutesQuestions.take(_nombreQuestionsExamen).toList();
 
     // Réassigner les index après le mélange
     final questionsIndexees = [
@@ -226,7 +229,8 @@ class ExamenNotifier extends StateNotifier<ExamenState> {
   }
 }
 
-final examenProvider =
-    StateNotifierProvider<ExamenNotifier, ExamenState>((ref) {
+final examenProvider = StateNotifierProvider<ExamenNotifier, ExamenState>((
+  ref,
+) {
   return ExamenNotifier();
 });

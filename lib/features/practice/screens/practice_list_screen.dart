@@ -66,9 +66,9 @@ class PracticeListScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  ...entry.value
-                      .map((session) => _PracticeCard(session: session))
-                      ,
+                  ...entry.value.map(
+                    (session) => _PracticeCard(session: session),
+                  ),
                   const SizedBox(height: 16),
                 ],
               );

@@ -30,9 +30,7 @@ class AdminSeriesScreen extends ConsumerWidget {
         label: const Text('Nouvelle série'),
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const AdminSerieFormScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const AdminSerieFormScreen()),
         ),
       ),
       body: series.isEmpty
@@ -89,8 +87,10 @@ class _SerieAdminCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Center(
-                    child: Text(serie.emoji,
-                        style: const TextStyle(fontSize: 22)),
+                    child: Text(
+                      serie.emoji,
+                      style: const TextStyle(fontSize: 22),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -141,8 +141,7 @@ class _SerieAdminCard extends ConsumerWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          AdminSlidesScreen(serie: serie),
+                      builder: (_) => AdminSlidesScreen(serie: serie),
                     ),
                   ),
                 ),
@@ -153,8 +152,7 @@ class _SerieAdminCard extends ConsumerWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          AdminSerieFormScreen(serie: serie),
+                      builder: (_) => AdminSerieFormScreen(serie: serie),
                     ),
                   ),
                 ),
@@ -165,8 +163,7 @@ class _SerieAdminCard extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.delete_outline, size: 16),
                   label: const Text('Supprimer'),
-                  onPressed: () =>
-                      _confirmerSuppression(context, ref),
+                  onPressed: () => _confirmerSuppression(context, ref),
                 ),
               ],
             ),
@@ -177,8 +174,11 @@ class _SerieAdminCard extends ConsumerWidget {
   }
 
   Future<void> _confirmerSuppression(
-      BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final ok =
+        await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text('Supprimer « ${serie.titre} » ?'),
@@ -192,7 +192,8 @@ class _SerieAdminCard extends ConsumerWidget {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                    backgroundColor: AppConstants.secondaryColor),
+                  backgroundColor: AppConstants.secondaryColor,
+                ),
                 onPressed: () => Navigator.pop(ctx, true),
                 child: const Text('Supprimer'),
               ),

@@ -295,7 +295,8 @@ class AuthService {
       );
     }
     final expectedHash = rawUser['passwordHash'] as String?;
-    if (expectedHash == null || expectedHash != _hashPassword(currentPassword)) {
+    if (expectedHash == null ||
+        expectedHash != _hashPassword(currentPassword)) {
       throw const AppAuthException(
         code: 'wrong-password',
         message: 'Mot de passe actuel incorrect.',
@@ -319,8 +320,7 @@ class AuthService {
     // Mode local : pas d'email possible — lever une erreur explicite.
     throw const AppAuthException(
       code: 'local-mode-no-email',
-      message:
-          'local-mode', // code sentinelle capturé dans le contrôleur
+      message: 'local-mode', // code sentinelle capturé dans le contrôleur
     );
   }
 

@@ -64,34 +64,34 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
           .collection('users_progress')
           .get();
 
-      final progressMap = {
-        for (final d in progressSnap.docs) d.id: d.data()
-      };
+      final progressMap = {for (final d in progressSnap.docs) d.id: d.data()};
 
       final ranks = <_ApprenantRank>[];
       for (final u in usersSnap.docs) {
         final data = u.data();
         final prog = progressMap[u.id] ?? {};
-        final quizScores =
-            prog['quizScores'] as Map<String, dynamic>? ?? {};
+        final quizScores = prog['quizScores'] as Map<String, dynamic>? ?? {};
         final avgScore = quizScores.isEmpty
             ? 0.0
-            : quizScores.values
-                    .whereType<num>()
-                    .fold<double>(0, (s, v) => s + v) /
-                quizScores.length;
-        final lessons =
-            (prog['completedLessons'] as List?)?.length ?? 0;
+            : quizScores.values.whereType<num>().fold<double>(
+                    0,
+                    (s, v) => s + v,
+                  ) /
+                  quizScores.length;
+        final lessons = (prog['completedLessons'] as List?)?.length ?? 0;
 
-        ranks.add(_ApprenantRank(
-          uid: u.id,
-          nom: data['displayName'] as String? ??
-              (data['email'] as String? ?? '').split('@').first,
-          email: data['email'] as String? ?? '',
-          lessonsCompleted: lessons,
-          avgScore: avgScore,
-          quizCount: quizScores.length,
-        ));
+        ranks.add(
+          _ApprenantRank(
+            uid: u.id,
+            nom:
+                data['displayName'] as String? ??
+                (data['email'] as String? ?? '').split('@').first,
+            email: data['email'] as String? ?? '',
+            lessonsCompleted: lessons,
+            avgScore: avgScore,
+            quizCount: quizScores.length,
+          ),
+        );
       }
 
       _sortRanks(ranks);
@@ -111,8 +111,7 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
     if (_sortBy == 'score') {
       list.sort((a, b) => b.avgScore.compareTo(a.avgScore));
     } else {
-      list.sort(
-          (a, b) => b.lessonsCompleted.compareTo(a.lessonsCompleted));
+      list.sort((a, b) => b.lessonsCompleted.compareTo(a.lessonsCompleted));
     }
   }
 
@@ -147,8 +146,7 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
                 child: _buildPodium(_classement.take(3).toList()),
               ),
             SliverPadding(
-              padding:
-                  const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, i) {
@@ -196,21 +194,26 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.black87),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.black87,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Text(
                     'Classement',
                     style: TextStyle(
-                        color: Colors.black87,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.refresh_rounded,
-                        color: Colors.black54),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.black54,
+                    ),
                     onPressed: _charger,
                     tooltip: 'Actualiser',
                   ),
@@ -221,8 +224,7 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
                 child: Text(
                   '${_classement.length} apprenant(s) — trié par '
                   '${_sortBy == "score" ? "score moyen" : "leçons complétées"}',
-                  style: const TextStyle(
-                      color: Colors.black54, fontSize: 13),
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
                 ),
               ),
             ],
@@ -237,9 +239,10 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(
         children: [
-          const Text('Trier par :',
-              style: TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 13)),
+          const Text(
+            'Trier par :',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
           const SizedBox(width: 12),
           _SortChip(
             label: 'Score moyen',
@@ -263,9 +266,7 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
     final medals = ['🥇', '🥈', '🥉'];
     final heights = [110.0, 85.0, 70.0];
     // Order: 2nd, 1st, 3rd (podium arrangement)
-    final order = top3.length >= 3
-        ? [top3[1], top3[0], top3[2]]
-        : top3;
+    final order = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
     final orderIdx = top3.length >= 3 ? [1, 0, 2] : [0, 1, 2];
 
     return Container(
@@ -324,8 +325,10 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
         children: [
           Icon(Icons.emoji_events_outlined, size: 60, color: Colors.grey),
           SizedBox(height: 16),
-          Text('Aucun apprenant trouvé.',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Aucun apprenant trouvé.',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -338,9 +341,11 @@ class _AdminClassementScreenState extends State<AdminClassementScreen> {
         children: [
           const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
           const SizedBox(height: 12),
-          Text('Erreur : $_error',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13)),
+          Text(
+            'Erreur : $_error',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13),
+          ),
           const SizedBox(height: 12),
           FilledButton.icon(
             icon: const Icon(Icons.refresh),
@@ -481,8 +486,8 @@ class _RankRow extends StatelessWidget {
     final color = score >= 87.5
         ? AppConstants.primaryColor
         : score >= 60
-            ? AppConstants.yellowBF
-            : AppConstants.secondaryColor;
+        ? AppConstants.yellowBF
+        : AppConstants.secondaryColor;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -512,7 +517,9 @@ class _RankRow extends StatelessWidget {
               child: Text(
                 '#$rank',
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 12),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),
@@ -524,9 +531,10 @@ class _RankRow extends StatelessWidget {
             child: Text(
               apprenant.nom.isNotEmpty ? apprenant.nom[0].toUpperCase() : '?',
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _kAdminPrimary,
-                  fontSize: 15),
+                fontWeight: FontWeight.bold,
+                color: _kAdminPrimary,
+                fontSize: 15,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -538,13 +546,14 @@ class _RankRow extends StatelessWidget {
                 Text(
                   apprenant.nom,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 13),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   apprenant.email,
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -565,8 +574,7 @@ class _RankRow extends StatelessWidget {
               if (sortBy == 'score')
                 Text(
                   '${apprenant.quizCount} quiz',
-                  style: TextStyle(
-                      fontSize: 10, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                 ),
             ],
           ),
@@ -600,8 +608,7 @@ class _SortChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? color : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: selected ? color : Colors.grey.shade300),
+          border: Border.all(color: selected ? color : Colors.grey.shade300),
         ),
         child: Text(
           label,

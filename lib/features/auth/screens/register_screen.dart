@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
-import '../models/app_auth_user.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -80,27 +79,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     );
 
-    final authenticatedUser = ref.read(currentAuthUserProvider);
-    if (authenticatedUser != null && authenticatedUser.hasActiveSession) {
-      _navigateAfterRegister(authenticatedUser);
-      return;
+    // Le routeur (routerProvider) gère la redirection selon le rôle et le statut
+    // d'approbation. Pour un apprenant, il redirigera vers /pending-approval
+    // dès que userApprovalProvider aura émis false (via le stream Firestore).
+    if (!user.hasActiveSession) {
+      context.go(AppConstants.routeLogin);
     }
-
-    if (user.hasActiveSession) {
-      _navigateAfterRegister(user);
-      return;
-    }
-
-    context.go(AppConstants.routeLogin);
-  }
-
-  void _navigateAfterRegister(AppAuthUser user) {
-    if (user.role == 'admin') {
-      context.go(AppConstants.routeAdmin);
-      return;
-    }
-
-    context.go(AppConstants.routeDashboard);
+    // Si session active : le routeur redirige automatiquement.
   }
 
   @override

@@ -89,6 +89,5 @@ class Serie {
 
   int get nombreDiapositives => diapositives.length;
 
-  int get nombreQuestions =>
-      diapositives.where((d) => d.aUneQuestion).length;
+  int get nombreQuestions => diapositives.where((d) => d.aUneQuestion).length;
 }

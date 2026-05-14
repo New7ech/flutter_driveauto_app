@@ -19,7 +19,7 @@ class SerieRepository {
   final FirebaseFirestore? _firestore;
 
   SerieRepository(this._box, {FirebaseFirestore? firestore})
-      : _firestore = firestore {
+    : _firestore = firestore {
     _seedIfNeeded();
     _seedFirestoreIfNeeded();
   }
@@ -40,13 +40,14 @@ class SerieRepository {
       controller.onCancel = () => sub.cancel();
       return controller.stream;
     }
-    return fs.collection(_collection).snapshots().map((snap) {
+    return fs.collection(_collection).snapshots().asyncMap((snap) async {
       if (snap.docs.isEmpty) return CoursData.series;
       try {
-        return snap.docs
-            .map((doc) => _serieFromMap(doc.data()))
-            .toList()
-          ..sort((a, b) => a.id.compareTo(b.id));
+        final series =
+            snap.docs.map((doc) => _serieFromMap(doc.data())).toList()
+              ..sort((a, b) => a.id.compareTo(b.id));
+        await _persist(series).catchError((_) {});
+        return series;
       } catch (_) {
         return CoursData.series;
       }
@@ -60,9 +61,7 @@ class SerieRepository {
     if (raw == null) return CoursData.series;
     try {
       final list = jsonDecode(raw as String) as List;
-      return list
-          .map((m) => _serieFromMap(m as Map<String, dynamic>))
-          .toList();
+      return list.map((m) => _serieFromMap(m as Map<String, dynamic>)).toList();
     } catch (_) {
       return CoursData.series;
     }
@@ -113,8 +112,7 @@ class SerieRepository {
       slides.add(diapo);
     }
     // Re-ordonner
-    final sorted = slides.toList()
-      ..sort((a, b) => a.ordre.compareTo(b.ordre));
+    final sorted = slides.toList()..sort((a, b) => a.ordre.compareTo(b.ordre));
     all[idx] = Serie(
       id: serie.id,
       titre: serie.titre,
@@ -138,9 +136,7 @@ class SerieRepository {
     final idx = all.indexWhere((s) => s.id == serieId);
     if (idx < 0) return;
     final serie = all[idx];
-    final slides = serie.diapositives
-        .where((d) => d.id != diapoId)
-        .toList();
+    final slides = serie.diapositives.where((d) => d.id != diapoId).toList();
     all[idx] = Serie(
       id: serie.id,
       titre: serie.titre,
@@ -166,10 +162,7 @@ class SerieRepository {
     if (fs != null) {
       final batch = fs.batch();
       for (final serie in CoursData.series) {
-        batch.set(
-          fs.collection(_collection).doc(serie.id),
-          _serieToMap(serie),
-        );
+        batch.set(fs.collection(_collection).doc(serie.id), _serieToMap(serie));
       }
       await batch.commit().catchError((_) {});
     }
@@ -179,10 +172,7 @@ class SerieRepository {
 
   void _seedIfNeeded() {
     if (!_box.containsKey(_key)) {
-      _box.put(
-        _key,
-        jsonEncode(CoursData.series.map(_serieToMap).toList()),
-      );
+      _box.put(_key, jsonEncode(CoursData.series.map(_serieToMap).toList()));
     }
   }
 
@@ -218,59 +208,65 @@ class SerieRepository {
   static Serie serieFromMap(Map<String, dynamic> m) => _serieFromMap(m);
 
   static Map<String, dynamic> _serieToMap(Serie s) => {
-        'id': s.id,
-        'titre': s.titre,
-        'description': s.description,
-        'couvertureImage': s.couvertureImage,
-        'categorie': s.categorie,
-        'couleurHex': s.couleurHex,
-        'emoji': s.emoji,
-        'diapositives': s.diapositives.map(_diapoToMap).toList(),
-      };
+    'id': s.id,
+    'titre': s.titre,
+    'description': s.description,
+    'couvertureImage': s.couvertureImage,
+    'categorie': s.categorie,
+    'couleurHex': s.couleurHex,
+    'emoji': s.emoji,
+    'diapositives': s.diapositives.map(_diapoToMap).toList(),
+  };
 
   static Serie _serieFromMap(Map<String, dynamic> m) => Serie(
-        id: m['id'] as String,
-        titre: m['titre'] as String,
-        description: m['description'] as String,
-        couvertureImage: m['couvertureImage'] as String?,
-        categorie: m['categorie'] as String,
-        couleurHex: m['couleurHex'] as int,
-        emoji: m['emoji'] as String,
-        diapositives: (m['diapositives'] as List)
-            .map((d) => _diapoFromMap(d as Map<String, dynamic>))
-            .toList(),
-      );
+    id: m['id'] as String,
+    titre: m['titre'] as String,
+    description: m['description'] as String,
+    couvertureImage: m['couvertureImage'] as String?,
+    categorie: m['categorie'] as String,
+    couleurHex: m['couleurHex'] as int,
+    emoji: m['emoji'] as String,
+    diapositives: (m['diapositives'] as List)
+        .map((d) => _diapoFromMap(d as Map<String, dynamic>))
+        .toList(),
+  );
 
   static Map<String, dynamic> _diapoToMap(Diapositive d) => {
-        'id': d.id,
-        'serieId': d.serieId,
-        'ordre': d.ordre,
-        'titre': d.titre,
-        'imagePath': d.imagePath,
-        'contenu': d.contenu,
-        'question': d.question == null ? null : _questionToMap(d.question!),
-      };
+    'id': d.id,
+    'serieId': d.serieId,
+    'ordre': d.ordre,
+    'titre': d.titre,
+    'imagePath': d.imagePath,
+    'contenu': d.contenu,
+    'question': d.question == null ? null : _questionToMap(d.question!),
+  };
 
   static Diapositive _diapoFromMap(Map<String, dynamic> m) => Diapositive(
-        id: m['id'] as String,
-        serieId: m['serieId'] as String,
-        ordre: m['ordre'] as int,
-        titre: m['titre'] as String,
-        imagePath: m['imagePath'] as String?,
-        contenu: m['contenu'] as String,
-        question: m['question'] == null
-            ? null
-            : _questionFromMap(m['question'] as Map<String, dynamic>),
-      );
+    id: m['id'] as String,
+    serieId: m['serieId'] as String,
+    ordre: m['ordre'] as int,
+    titre: m['titre'] as String,
+    imagePath: _optionalString(m['imagePath'] ?? m['imageUrl']),
+    contenu: m['contenu'] as String,
+    question: m['question'] == null
+        ? null
+        : _questionFromMap(m['question'] as Map<String, dynamic>),
+  );
+
+  static String? _optionalString(Object? value) {
+    if (value is! String) return null;
+    final text = value.trim();
+    return text.isEmpty ? null : text;
+  }
 
   static Map<String, dynamic> _questionToMap(DiapositiveQuestion q) => {
-        'id': q.id,
-        'type': q.type.name,
-        'texte': q.texte,
-        'options': q.options,
-        'reponsesCorrectes': q.reponsesCorrectes,
-        'explication': q.explication,
-      };
+    'id': q.id,
+    'type': q.type.name,
+    'texte': q.texte,
+    'options': q.options,
+    'reponsesCorrectes': q.reponsesCorrectes,
+    'explication': q.explication,
+  };
 
   static DiapositiveQuestion _questionFromMap(Map<String, dynamic> m) =>
       DiapositiveQuestion(

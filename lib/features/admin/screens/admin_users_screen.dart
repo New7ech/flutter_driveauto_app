@@ -4,17 +4,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../core/constants/app_constants.dart';
 
 // ── Provider Firestore ────────────────────────────────────────────────────────
 
-final _firestoreUsersProvider =
-    StreamProvider<List<Map<String, dynamic>>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('users')
-      .snapshots()
-      .map((snap) {
+final _firestoreUsersProvider = StreamProvider<List<Map<String, dynamic>>>((
+  ref,
+) {
+  return FirebaseFirestore.instance.collection('users').snapshots().map((snap) {
     final docs = snap.docs
         .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
         .toList();
@@ -64,14 +63,14 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
       final name = (u['displayName'] as String? ?? '').toLowerCase();
       final email = (u['email'] as String? ?? '').toLowerCase();
       final role = (u['role'] as String? ?? 'apprenant');
-      final approved = u['approved'] as bool? ?? true;
+      final approved = u['approved'] as bool? ?? false;
 
       final matchSearch = q.isEmpty || name.contains(q) || email.contains(q);
       final matchRole = _filterRole == 'tous'
           ? true
           : _filterRole == 'pending'
-              ? (role == 'apprenant' && !approved)
-              : role == _filterRole;
+          ? (role == 'apprenant' && !approved)
+          : role == _filterRole;
 
       return matchSearch && matchRole;
     }).toList();
@@ -79,15 +78,18 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   Future<void> _approveUser(Map<String, dynamic> user) async {
     final uid = user['id'] as String? ?? user['uid'] as String? ?? '';
-    final name = user['displayName'] as String? ??
+    final name =
+        user['displayName'] as String? ??
         (user['email'] as String? ?? '').split('@').first;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Approuver l\'apprenant'),
-        content: Text('Voulez-vous approuver "$name" ?\n\n'
-            'Il pourra accéder à l\'application immédiatement.'),
+        content: Text(
+          'Voulez-vous approuver "$name" ?\n\n'
+          'Il pourra accéder à l\'application immédiatement.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -95,7 +97,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: AppConstants.primaryColor),
+              backgroundColor: AppConstants.primaryColor,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Approuver'),
           ),
@@ -106,10 +109,10 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .update({'approved': true, 'updatedAt': FieldValue.serverTimestamp()});
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'approved': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -151,7 +154,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
           final apprenants = users.length - admins;
           final pending = users.where((u) {
             final role = u['role'] as String? ?? 'apprenant';
-            final approved = u['approved'] as bool? ?? true;
+            final approved = u['approved'] as bool? ?? false;
             return role == 'apprenant' && !approved;
           }).length;
 
@@ -170,22 +173,26 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _StatMini(
-                        label: 'Total',
-                        value: '${users.length}',
-                        icon: Icons.people),
+                      label: 'Total',
+                      value: '${users.length}',
+                      icon: Icons.people,
+                    ),
                     _StatMini(
-                        label: 'Apprenants',
-                        value: '$apprenants',
-                        icon: Icons.school),
+                      label: 'Apprenants',
+                      value: '$apprenants',
+                      icon: Icons.school,
+                    ),
                     _StatMini(
-                        label: 'Admins',
-                        value: '$admins',
-                        icon: Icons.admin_panel_settings),
+                      label: 'Admins',
+                      value: '$admins',
+                      icon: Icons.admin_panel_settings,
+                    ),
                     _StatMini(
-                        label: 'En attente',
-                        value: '$pending',
-                        icon: Icons.hourglass_top_rounded,
-                        color: const Color(0xFFF9A825)),
+                      label: 'En attente',
+                      value: '$pending',
+                      icon: Icons.hourglass_top_rounded,
+                      color: const Color(0xFFF9A825),
+                    ),
                   ],
                 ),
               ),
@@ -198,8 +205,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Rechercher par nom ou email…',
-                    prefixIcon:
-                        Icon(Icons.search, color: Colors.grey.shade500),
+                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
@@ -238,8 +244,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                       _FilterChip(
                         label: 'Apprenants',
                         selected: _filterRole == 'apprenant',
-                        onTap: () =>
-                            setState(() => _filterRole = 'apprenant'),
+                        onTap: () => setState(() => _filterRole = 'apprenant'),
                       ),
                       const SizedBox(width: 8),
                       _FilterChip(
@@ -252,8 +257,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                         label: 'En attente${pending > 0 ? ' ($pending)' : ''}',
                         selected: _filterRole == 'pending',
                         color: const Color(0xFFF9A825),
-                        onTap: () =>
-                            setState(() => _filterRole = 'pending'),
+                        onTap: () => setState(() => _filterRole = 'pending'),
                       ),
                     ],
                   ),
@@ -266,8 +270,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                 child: filtered.isEmpty
                     ? _buildEmpty(users.isEmpty)
                     : ListView.builder(
-                        padding:
-                            const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) => _UserCard(
                           data: filtered[index],
@@ -327,9 +330,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
         children: [
           Icon(Icons.people_outline, size: 60, color: Colors.grey.shade400),
           const SizedBox(height: 16),
-          Text(noUsers
-              ? 'Aucun utilisateur enregistré.'
-              : 'Aucun résultat pour cette recherche.'),
+          Text(
+            noUsers
+                ? 'Aucun utilisateur enregistré.'
+                : 'Aucun résultat pour cette recherche.',
+          ),
         ],
       ),
     );
@@ -337,11 +342,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   // ── Dialogue : Modifier le nom ────────────────────────────────────────────
 
-  void _showEditDialog(
-      BuildContext context, Map<String, dynamic> user) {
+  void _showEditDialog(BuildContext context, Map<String, dynamic> user) {
     final uid = user['id'] as String? ?? user['uid'] as String? ?? '';
     final controller = TextEditingController(
-        text: user['displayName'] as String? ?? '');
+      text: user['displayName'] as String? ?? '',
+    );
 
     showDialog(
       context: context,
@@ -371,9 +376,9 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                     .collection('users')
                     .doc(uid)
                     .update({
-                  'displayName': newName,
-                  'updatedAt': FieldValue.serverTimestamp(),
-                });
+                      'displayName': newName,
+                      'updatedAt': FieldValue.serverTimestamp(),
+                    });
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -404,10 +409,10 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   // ── Dialogue : Confirmer suppression ─────────────────────────────────────
 
-  void _confirmDelete(
-      BuildContext context, Map<String, dynamic> user) {
+  void _confirmDelete(BuildContext context, Map<String, dynamic> user) {
     final uid = user['id'] as String? ?? user['uid'] as String? ?? '';
-    final name = user['displayName'] as String? ??
+    final name =
+        user['displayName'] as String? ??
         (user['email'] as String? ?? '').split('@').first;
 
     showDialog(
@@ -425,8 +430,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
             child: const Text('Annuler'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade700),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
             onPressed: () async {
               Navigator.pop(ctx);
               try {
@@ -440,6 +444,15 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                     .doc(uid)
                     .delete()
                     .catchError((_) {});
+                // Nettoie les entrées Hive locales (clés "{uid}_*")
+                try {
+                  final box = Hive.box(AppConstants.hiveSeriesProgressBox);
+                  final orphanKeys = box.keys
+                      .whereType<String>()
+                      .where((k) => k.startsWith('${uid}_'))
+                      .toList();
+                  await box.deleteAll(orphanKeys);
+                } catch (_) {}
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -470,17 +483,16 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   // ── Dialogue : Progression de l'apprenant ────────────────────────────────
 
-  void _showProgressDialog(
-      BuildContext context, Map<String, dynamic> user) {
+  void _showProgressDialog(BuildContext context, Map<String, dynamic> user) {
     final uid = user['id'] as String? ?? user['uid'] as String? ?? '';
-    final name = user['displayName'] as String? ??
+    final name =
+        user['displayName'] as String? ??
         (user['email'] as String? ?? '').split('@').first;
 
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -490,7 +502,9 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
               Text(
                 'Progression — $name',
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 16),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 16),
               FutureBuilder<DocumentSnapshot>(
@@ -501,10 +515,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: CircularProgressIndicator(),
-                    ));
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
                   }
                   if (snap.hasError) {
                     return Text('Erreur : ${snap.error}');
@@ -516,8 +531,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                     );
                   }
 
-                  final data =
-                      snap.data!.data() as Map<String, dynamic>;
+                  final data = snap.data!.data() as Map<String, dynamic>;
                   return _ProgressView(data: data);
                 },
               ),
@@ -545,15 +559,12 @@ class _ProgressView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completedLessons =
-        (data['completedLessons'] as List?)?.length ?? 0;
+    final completedLessons = (data['completedLessons'] as List?)?.length ?? 0;
     final quizScores = data['quizScores'] as Map<String, dynamic>? ?? {};
     final avgScore = quizScores.isEmpty
         ? null
-        : quizScores.values
-                .whereType<num>()
-                .fold<double>(0, (s, v) => s + v) /
-            quizScores.length;
+        : quizScores.values.whereType<num>().fold<double>(0, (s, v) => s + v) /
+              quizScores.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,13 +614,14 @@ class _ProgressRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(width: 10),
-        Expanded(
-            child: Text(label,
-                style: const TextStyle(fontSize: 13))),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
         Text(
           value,
           style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 14, color: color),
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: color,
+          ),
         ),
       ],
     );
@@ -624,12 +636,14 @@ class _UserCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onProgress,
+    this.onApprove,
   });
 
   final Map<String, dynamic> data;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onProgress;
+  final VoidCallback? onApprove;
 
   String get _uid => data['id'] as String? ?? data['uid'] as String? ?? '';
   String get _email => data['email'] as String? ?? '(inconnu)';
@@ -637,6 +651,7 @@ class _UserCard extends StatelessWidget {
       data['displayName'] as String? ?? _email.split('@').first;
   String get _role => data['role'] as String? ?? 'apprenant';
   bool get _isAdmin => _role == 'admin';
+  bool get _isApproved => data['approved'] as bool? ?? true;
   DateTime? get _createdAt => _parseDate(data['createdAt']);
 
   @override
@@ -655,9 +670,7 @@ class _UserCard extends StatelessWidget {
                   ? const Color(0xFF7B1FA2).withValues(alpha: 0.15)
                   : Colors.blue.shade50,
               child: Text(
-                _displayName.isNotEmpty
-                    ? _displayName[0].toUpperCase()
-                    : '?',
+                _displayName.isNotEmpty ? _displayName[0].toUpperCase() : '?',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: _isAdmin
@@ -676,12 +689,13 @@ class _UserCard extends StatelessWidget {
                   Text(
                     _displayName,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
                   ),
                   Text(
                     _email,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (_createdAt != null) ...[
@@ -689,7 +703,9 @@ class _UserCard extends StatelessWidget {
                     Text(
                       'Inscrit le ${_formatDate(_createdAt!)}',
                       style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade400),
+                        fontSize: 11,
+                        color: Colors.grey.shade400,
+                      ),
                     ),
                   ],
                 ],
@@ -704,6 +720,16 @@ class _UserCard extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Approuver (apprenant en attente)
+                    if (!_isAdmin && !_isApproved && onApprove != null) ...[
+                      _ActionIcon(
+                        icon: Icons.check_circle_outline,
+                        color: Colors.green.shade600,
+                        tooltip: 'Approuver',
+                        onTap: onApprove!,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                     // Voir progression
                     _ActionIcon(
                       icon: Icons.bar_chart,
@@ -818,8 +844,7 @@ class _RoleToggleButtonState extends State<_RoleToggleButton> {
   bool _loading = false;
 
   Future<void> _toggleRole() async {
-    final newRole =
-        widget.currentRole == 'admin' ? 'apprenant' : 'admin';
+    final newRole = widget.currentRole == 'admin' ? 'apprenant' : 'admin';
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -854,8 +879,7 @@ class _RoleToggleButtonState extends State<_RoleToggleButton> {
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.uid)
-          .update(
-              {'role': newRole, 'updatedAt': FieldValue.serverTimestamp()});
+          .update({'role': newRole, 'updatedAt': FieldValue.serverTimestamp()});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -905,27 +929,26 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.color,
   });
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = color ?? Colors.blue.shade700;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              selected ? Colors.blue.shade700 : Colors.grey.shade100,
+          color: selected ? activeColor : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected
-                ? Colors.blue.shade700
-                : Colors.grey.shade300,
+            color: selected ? activeColor : Colors.grey.shade300,
           ),
         ),
         child: Text(
@@ -944,26 +967,33 @@ class _FilterChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _StatMini extends StatelessWidget {
-  const _StatMini(
-      {required this.label, required this.value, required this.icon});
+  const _StatMini({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.color,
+  });
   final String label;
   final String value;
   final IconData icon;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final c = color ?? Colors.blue.shade700;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: Colors.blue.shade700),
+        Icon(icon, size: 18, color: c),
         const SizedBox(height: 4),
-        Text(value,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.blue.shade700)),
-        Text(label,
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: c),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+        ),
       ],
     );
   }

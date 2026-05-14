@@ -8,12 +8,12 @@ import 'car_player.dart';
 
 class ParkingSpot extends PositionComponent {
   final Paint _paintNormal = Paint()
-    ..color = Colors.white.withOpacity(0.4)
+    ..color = Colors.white.withValues(alpha: 0.4)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 3;
 
   final Paint _paintSuccess = Paint()
-    ..color = Colors.green.withOpacity(0.6)
+    ..color = Colors.green.withValues(alpha: 0.6)
     ..style = PaintingStyle.fill;
 
   bool isOccupied = false;

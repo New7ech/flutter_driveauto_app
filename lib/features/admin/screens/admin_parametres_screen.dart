@@ -27,8 +27,7 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
   bool _saving = false;
   String? _loadError;
 
-  static const _doc =
-      'auto_ecole';
+  static const _doc = 'auto_ecole';
 
   @override
   void initState() {
@@ -79,10 +78,7 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
   Future<void> _sauvegarder() async {
     setState(() => _saving = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('parametres')
-          .doc(_doc)
-          .set({
+      await FirebaseFirestore.instance.collection('parametres').doc(_doc).set({
         'nom': _nomCtrl.text.trim(),
         'slogan': _sloganCtrl.text.trim(),
         'telephone': _telephoneCtrl.text.trim(),
@@ -130,8 +126,11 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.cloud_off_rounded,
-                        size: 52, color: Colors.red),
+                    const Icon(
+                      Icons.cloud_off_rounded,
+                      size: 52,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       _loadError!,
@@ -142,8 +141,7 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
                     FilledButton.icon(
                       icon: const Icon(Icons.refresh_rounded),
                       label: const Text('Réessayer'),
-                      style: FilledButton.styleFrom(
-                          backgroundColor: _kPrimary),
+                      style: FilledButton.styleFrom(backgroundColor: _kPrimary),
                       onPressed: () {
                         setState(() {
                           _loading = true;
@@ -162,38 +160,61 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
                 children: [
                   _buildSection('🏫  Identité', [
-                    _field(_nomCtrl, 'Nom de l\'auto-école *',
-                        Icons.business_rounded),
+                    _field(
+                      _nomCtrl,
+                      'Nom de l\'auto-école *',
+                      Icons.business_rounded,
+                    ),
                     const SizedBox(height: 12),
-                    _field(_sloganCtrl, 'Slogan / description',
-                        Icons.format_quote_rounded,
-                        maxLines: 2,
-                        hint: 'Ex : Votre permis, notre priorité'),
+                    _field(
+                      _sloganCtrl,
+                      'Slogan / description',
+                      Icons.format_quote_rounded,
+                      maxLines: 2,
+                      hint: 'Ex : Votre permis, notre priorité',
+                    ),
                   ]),
                   const SizedBox(height: 24),
                   _buildSection('📞  Contact', [
-                    _field(_telephoneCtrl, 'Téléphone', Icons.phone_rounded,
-                        type: TextInputType.phone),
+                    _field(
+                      _telephoneCtrl,
+                      'Téléphone',
+                      Icons.phone_rounded,
+                      type: TextInputType.phone,
+                    ),
                     const SizedBox(height: 12),
-                    _field(_emailCtrl, 'Email', Icons.email_rounded,
-                        type: TextInputType.emailAddress),
+                    _field(
+                      _emailCtrl,
+                      'Email',
+                      Icons.email_rounded,
+                      type: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 12),
-                    _field(_siteCtrl, 'Site web (optionnel)',
-                        Icons.language_rounded,
-                        type: TextInputType.url),
+                    _field(
+                      _siteCtrl,
+                      'Site web (optionnel)',
+                      Icons.language_rounded,
+                      type: TextInputType.url,
+                    ),
                   ]),
                   const SizedBox(height: 24),
                   _buildSection('📍  Localisation & horaires', [
-                    _field(_adresseCtrl, 'Adresse complète',
-                        Icons.location_on_rounded,
-                        maxLines: 2,
-                        hint: 'Ex : Avenue Kwame Nkrumah, Ouagadougou'),
+                    _field(
+                      _adresseCtrl,
+                      'Adresse complète',
+                      Icons.location_on_rounded,
+                      maxLines: 2,
+                      hint: 'Ex : Avenue Kwame Nkrumah, Ouagadougou',
+                    ),
                     const SizedBox(height: 12),
-                    _field(_horairesCtrl, 'Horaires d\'ouverture',
-                        Icons.schedule_rounded,
-                        maxLines: 3,
-                        hint:
-                            'Ex : Lun–Ven 8h–17h\nSamedi 8h–13h\nFermé dimanche'),
+                    _field(
+                      _horairesCtrl,
+                      'Horaires d\'ouverture',
+                      Icons.schedule_rounded,
+                      maxLines: 3,
+                      hint:
+                          'Ex : Lun–Ven 8h–17h\nSamedi 8h–13h\nFermé dimanche',
+                    ),
                   ]),
                   const SizedBox(height: 32),
                   Container(
@@ -228,11 +249,16 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               else
-                                const Icon(Icons.save_rounded,
-                                    color: Colors.white, size: 18),
+                                const Icon(
+                                  Icons.save_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
                               const SizedBox(width: 8),
                               Text(
                                 _saving
@@ -281,16 +307,19 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Text(
                     'Paramètres',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -299,7 +328,10 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
                 child: Text(
                   'Informations officielles de votre auto-école,\nvisibles par tous les apprenants.',
                   style: TextStyle(
-                      color: Colors.white70, fontSize: 13, height: 1.5),
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -313,12 +345,15 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: _kPrimary,
-                letterSpacing: 0.2)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: _kPrimary,
+            letterSpacing: 0.2,
+          ),
+        ),
         const SizedBox(height: 12),
         ...children,
       ],
@@ -355,8 +390,10 @@ class _AdminParametresScreenState extends State<AdminParametresScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kPrimary, width: 2),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     );
   }

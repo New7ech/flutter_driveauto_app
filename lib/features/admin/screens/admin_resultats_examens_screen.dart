@@ -11,14 +11,16 @@ const _kDark = Color(0xFF4A148C);
 
 final _resultatsExamensProvider =
     StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
-  return FirebaseFirestore.instance
-      .collection('resultats_examens')
-      .orderBy('datePassage', descending: true)
-      .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-          .toList());
-});
+      return FirebaseFirestore.instance
+          .collection('resultats_examens')
+          .orderBy('datePassage', descending: true)
+          .snapshots()
+          .map(
+            (snap) => snap.docs
+                .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+                .toList(),
+          );
+    });
 
 enum _Filtre { tous, recus, recales }
 
@@ -72,11 +74,12 @@ class _AdminResultatsExamensScreenState
           _buildTabBar(),
           Expanded(
             child: async.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(
-                child: Text('Erreur : $e',
-                    style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  'Erreur : $e',
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
               data: (all) {
                 final filtered = _filtrer(all);
@@ -128,16 +131,19 @@ class _AdminResultatsExamensScreenState
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const Text(
                     'Résultats des examens',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -146,7 +152,10 @@ class _AdminResultatsExamensScreenState
                 child: Text(
                   'Historique des passages d\'examens blancs\npar les apprenants.',
                   style: TextStyle(
-                      color: Colors.white70, fontSize: 13, height: 1.5),
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -167,8 +176,7 @@ class _AdminResultatsExamensScreenState
         unselectedLabelColor: Colors.grey.shade500,
         indicatorColor: _kPrimary,
         indicatorWeight: 2.5,
-        labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold, fontSize: 13),
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         tabs: const [
           Tab(text: 'Tous'),
           Tab(text: 'Reçus ✅'),
@@ -191,8 +199,7 @@ class _AdminResultatsExamensScreenState
       decoration: BoxDecoration(
         color: _kPrimary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border:
-            Border.all(color: _kPrimary.withValues(alpha: 0.18)),
+        border: Border.all(color: _kPrimary.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
@@ -232,15 +239,15 @@ class _AdminResultatsExamensScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.school_outlined,
-              size: 64, color: Colors.grey.shade300),
+          Icon(Icons.school_outlined, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(
             'Aucun résultat',
             style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 15,
-                fontWeight: FontWeight.w500),
+              color: Colors.grey.shade500,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -275,8 +282,7 @@ class _ResultCard extends StatelessWidget {
         ? DateFormat('dd/MM/yyyy • HH:mm', 'fr_FR').format(date)
         : '—';
 
-    final badgeColor =
-        reussi ? const Color(0xFF1B8A4E) : Colors.red.shade700;
+    final badgeColor = reussi ? const Color(0xFF1B8A4E) : Colors.red.shade700;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -309,9 +315,7 @@ class _ResultCard extends StatelessWidget {
               ),
               child: Center(
                 child: Icon(
-                  reussi
-                      ? Icons.emoji_events_rounded
-                      : Icons.close_rounded,
+                  reussi ? Icons.emoji_events_rounded : Icons.close_rounded,
                   color: badgeColor,
                   size: 22,
                 ),
@@ -326,17 +330,16 @@ class _ResultCard extends StatelessWidget {
                   Text(
                     nom,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
                   Text(
                     dateStr,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   ),
                 ],
               ),
@@ -371,15 +374,14 @@ class _ResultCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${pct.toStringAsFixed(1)} %',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade500,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),

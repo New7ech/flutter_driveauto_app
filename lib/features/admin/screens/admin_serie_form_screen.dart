@@ -24,9 +24,26 @@ const List<int> _kCouleurs = [
 ];
 
 const List<String> _kEmojis = [
-  '🚦', '🛑', '🚗', '🅿️', '🚑', '📚', '🎓',
-  '🚧', '⚠️', '🗺️', '🛤️', '🚘', '✅', '📝',
-  '🔑', '🏁', '🛣️', '🚙', '⛽', '🔧',
+  '🚦',
+  '🛑',
+  '🚗',
+  '🅿️',
+  '🚑',
+  '📚',
+  '🎓',
+  '🚧',
+  '⚠️',
+  '🗺️',
+  '🛤️',
+  '🚘',
+  '✅',
+  '📝',
+  '🔑',
+  '🏁',
+  '🛣️',
+  '🚙',
+  '⛽',
+  '🔧',
 ];
 
 class AdminSerieFormScreen extends ConsumerStatefulWidget {
@@ -163,7 +180,9 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
                       ),
                     )
                   : Text(
-                      _isEdit ? 'Enregistrer les modifications' : 'Créer la série',
+                      _isEdit
+                          ? 'Enregistrer les modifications'
+                          : 'Créer la série',
                       style: const TextStyle(fontSize: 16),
                     ),
             ),
@@ -200,7 +219,9 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _titreCtrl.text.isEmpty ? 'Titre de la série' : _titreCtrl.text,
+                  _titreCtrl.text.isEmpty
+                      ? 'Titre de la série'
+                      : _titreCtrl.text,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Color(_couleurHex),
@@ -211,8 +232,7 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
                   _categorieCtrl.text.isEmpty
                       ? 'Catégorie'
                       : _categorieCtrl.text,
-                  style:
-                      TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ],
             ),
@@ -225,9 +245,9 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
@@ -252,9 +272,7 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
                   ? Border.all(color: Color(_couleurHex), width: 2)
                   : null,
             ),
-            child: Center(
-              child: Text(e, style: const TextStyle(fontSize: 22)),
-            ),
+            child: Center(child: Text(e, style: const TextStyle(fontSize: 22))),
           ),
         );
       }).toList(),
@@ -280,7 +298,12 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
                   ? Border.all(color: Colors.black, width: 2.5)
                   : Border.all(color: Colors.transparent),
               boxShadow: selected
-                  ? [BoxShadow(color: Color(hex).withValues(alpha: 0.5), blurRadius: 6)]
+                  ? [
+                      BoxShadow(
+                        color: Color(hex).withValues(alpha: 0.5),
+                        blurRadius: 6,
+                      ),
+                    ]
                   : null,
             ),
             child: selected
@@ -314,9 +337,11 @@ class _AdminSerieFormScreenState extends ConsumerState<AdminSerieFormScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isEdit
-              ? '« ${serie.titre} » modifiée.'
-              : '« ${serie.titre} » créée.'),
+          content: Text(
+            _isEdit
+                ? '« ${serie.titre} » modifiée.'
+                : '« ${serie.titre} » créée.',
+          ),
           backgroundColor: AppConstants.primaryColor,
           behavior: SnackBarBehavior.floating,
         ),

@@ -91,10 +91,7 @@ class QuizRepository {
   Future<void> saveQuiz(Quiz quiz) async {
     try {
       if (_firestore != null) {
-        await _firestore
-            .collection('quizzes')
-            .doc(quiz.id)
-            .set(quiz.toJson());
+        await _firestore.collection('quizzes').doc(quiz.id).set(quiz.toJson());
       }
       await _box.put(quiz.id, quiz);
     } catch (e) {

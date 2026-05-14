@@ -75,9 +75,6 @@ class QuizzesListScreen extends ConsumerWidget {
               itemCount: quizzes.length,
               itemBuilder: (context, index) {
                 final quiz = quizzes[index];
-                // TODO: Retrieve actual progress from UserProgress
-                final hasPassed = false;
-                final score = 0.0;
                 return Card(
                   elevation: 2,
                   margin: const EdgeInsets.only(bottom: 16),
@@ -88,14 +85,12 @@ class QuizzesListScreen extends ConsumerWidget {
                     contentPadding: const EdgeInsets.all(16),
                     leading: CircleAvatar(
                       radius: 28,
-                      backgroundColor: hasPassed
-                          ? Colors.green.withOpacity(0.1)
-                          : AppConstants.primaryColor.withOpacity(0.1),
-                      child: Icon(
-                        hasPassed ? Icons.emoji_events : Icons.quiz,
-                        color: hasPassed
-                            ? Colors.green
-                            : AppConstants.primaryColor,
+                      backgroundColor: AppConstants.primaryColor.withValues(
+                        alpha: 0.1,
+                      ),
+                      child: const Icon(
+                        Icons.quiz,
+                        color: AppConstants.primaryColor,
                         size: 30,
                       ),
                     ),
@@ -122,23 +117,14 @@ class QuizzesListScreen extends ConsumerWidget {
                           ),
                           const SizedBox(width: 16),
                           Icon(
-                            hasPassed ? Icons.check_circle : Icons.schedule,
+                            Icons.schedule,
                             size: 16,
-                            color: hasPassed
-                                ? Colors.green
-                                : Colors.grey.shade600,
+                            color: Colors.grey.shade600,
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            hasPassed ? '${score.toInt()}%' : 'À passer',
-                            style: TextStyle(
-                              color: hasPassed
-                                  ? Colors.green
-                                  : Colors.grey.shade600,
-                              fontWeight: hasPassed
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
+                            'À passer',
+                            style: TextStyle(color: Colors.grey.shade600),
                           ),
                         ],
                       ),

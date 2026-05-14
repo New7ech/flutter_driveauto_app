@@ -10,23 +10,22 @@ const _kTeal = Color(0xFF00695C);
 
 // ── Firestore streams ────────────────────────────────────────────────────────
 
-final _seancesColl =
-    FirebaseFirestore.instance.collection('seances_pratiques');
+final _seancesColl = FirebaseFirestore.instance.collection('seances_pratiques');
 final _usersColl = FirebaseFirestore.instance.collection('users');
 
 Stream<List<Map<String, dynamic>>> _seancesStream() {
   return _seancesColl
       .orderBy('dateSeance', descending: false)
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-          .toList());
+      .map(
+        (s) => s.docs
+            .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
+            .toList(),
+      );
 }
 
 Future<List<Map<String, dynamic>>> _fetchApprenants() async {
-  final snap = await _usersColl
-      .where('role', isEqualTo: 'apprenant')
-      .get();
+  final snap = await _usersColl.where('role', isEqualTo: 'apprenant').get();
   return snap.docs
       .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
       .toList();
@@ -114,8 +113,7 @@ class _AdminPlanningScreenState extends State<AdminPlanningScreen>
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_rounded,
-                    color: Colors.white),
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                 onPressed: () => Navigator.of(context).pop(),
               ),
               const Column(
@@ -124,9 +122,10 @@ class _AdminPlanningScreenState extends State<AdminPlanningScreen>
                   Text(
                     'Planning',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     'Séances de conduite pratique',
@@ -175,9 +174,10 @@ class _AdminPlanningScreenState extends State<AdminPlanningScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Erreur : $e'),
-              backgroundColor: Colors.red.shade700,
-              behavior: SnackBarBehavior.floating),
+            content: Text('Erreur : $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }
@@ -229,9 +229,7 @@ class _SeancesList extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  upcoming
-                      ? 'Aucune séance à venir'
-                      : 'Aucune séance passée',
+                  upcoming ? 'Aucune séance à venir' : 'Aucune séance passée',
                   style: TextStyle(color: Colors.grey.shade500),
                 ),
               ],
@@ -242,11 +240,8 @@ class _SeancesList extends StatelessWidget {
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
           itemCount: filtered.length,
-          itemBuilder: (context, i) => _SeanceCard(
-            data: filtered[i],
-            isDark: isDark,
-            isPast: !upcoming,
-          ),
+          itemBuilder: (context, i) =>
+              _SeanceCard(data: filtered[i], isDark: isDark, isPast: !upcoming),
         );
       },
     );
@@ -315,9 +310,7 @@ class _SeanceCard extends StatelessWidget {
         color: isDark ? AppConstants.cardColorDark : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isPast
-              ? Colors.grey.shade200
-              : _kTeal.withValues(alpha: 0.2),
+          color: isPast ? Colors.grey.shade200 : _kTeal.withValues(alpha: 0.2),
           width: 1.2,
         ),
         boxShadow: [
@@ -355,20 +348,26 @@ class _SeanceCard extends StatelessWidget {
                       Text(
                         _apprenant,
                         style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 14),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         dateStr,
                         style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: _statutColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -390,14 +389,16 @@ class _SeanceCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 _InfoBadge(
-                    icon: Icons.person_rounded,
-                    label: 'Moniteur : $_moniteur',
-                    color: _kTeal),
+                  icon: Icons.person_rounded,
+                  label: 'Moniteur : $_moniteur',
+                  color: _kTeal,
+                ),
                 if (_lieu.isNotEmpty)
                   _InfoBadge(
-                      icon: Icons.location_on_rounded,
-                      label: _lieu,
-                      color: Colors.blue.shade700),
+                    icon: Icons.location_on_rounded,
+                    label: _lieu,
+                    color: Colors.blue.shade700,
+                  ),
               ],
             ),
             if (_notes.isNotEmpty) ...[
@@ -405,9 +406,10 @@ class _SeanceCard extends StatelessWidget {
               Text(
                 _notes,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                    fontStyle: FontStyle.italic),
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -453,15 +455,7 @@ class _SeanceCard extends StatelessWidget {
   }
 
   String _weekday(int d) {
-    const days = [
-      'Lun',
-      'Mar',
-      'Mer',
-      'Jeu',
-      'Ven',
-      'Sam',
-      'Dim'
-    ];
+    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     return days[(d - 1).clamp(0, 6)];
   }
 }
@@ -521,8 +515,7 @@ class _SeanceFormState extends State<_SeanceForm> {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -553,22 +546,25 @@ class _SeanceFormState extends State<_SeanceForm> {
                     color: _kTeal.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.event_available_rounded,
-                      color: _kTeal, size: 20),
+                  child: const Icon(
+                    Icons.event_available_rounded,
+                    color: _kTeal,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 const Text(
                   'Planifier une séance',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 17),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             // Apprenant
-            const Text('Apprenant *',
-                style: TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 13)),
+            const Text(
+              'Apprenant *',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
             const SizedBox(height: 8),
             if (_loadingUsers)
               const Center(child: CircularProgressIndicator())
@@ -580,22 +576,25 @@ class _SeanceFormState extends State<_SeanceForm> {
                   filled: true,
                   fillColor: Colors.grey.shade50,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
                   enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: Colors.grey.shade300)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
                   focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: _kTeal, width: 2)),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _kTeal, width: 2),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
                 items: _apprenants.map((u) {
-                  final nom = u['displayName'] as String? ??
+                  final nom =
+                      u['displayName'] as String? ??
                       (u['email'] as String? ?? '').split('@').first;
                   return DropdownMenuItem<String>(
                     value: u['id'] as String,
@@ -605,11 +604,13 @@ class _SeanceFormState extends State<_SeanceForm> {
                 onChanged: (id) {
                   if (id == null) return;
                   final u = _apprenants.firstWhere(
-                      (a) => a['id'] == id,
-                      orElse: () => {});
+                    (a) => a['id'] == id,
+                    orElse: () => {},
+                  );
                   setState(() {
                     _apprenantId = id;
-                    _apprenantNom = u['displayName'] as String? ??
+                    _apprenantNom =
+                        u['displayName'] as String? ??
                         (u['email'] as String? ?? '').split('@').first;
                   });
                 },
@@ -623,11 +624,11 @@ class _SeanceFormState extends State<_SeanceForm> {
                     onTap: () async {
                       final d = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now()
-                            .add(const Duration(days: 1)),
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 1),
+                        ),
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now()
-                            .add(const Duration(days: 180)),
+                        lastDate: DateTime.now().add(const Duration(days: 180)),
                       );
                       if (d != null) setState(() => _dateSeance = d);
                     },
@@ -666,17 +667,19 @@ class _SeanceFormState extends State<_SeanceForm> {
             const SizedBox(height: 14),
             // Moniteur
             _buildTextField(
-                controller: _moniteurCtrl,
-                label: 'Moniteur',
-                hint: 'Nom du moniteur',
-                icon: Icons.person_rounded),
+              controller: _moniteurCtrl,
+              label: 'Moniteur',
+              hint: 'Nom du moniteur',
+              icon: Icons.person_rounded,
+            ),
             const SizedBox(height: 14),
             // Lieu
             _buildTextField(
-                controller: _lieuCtrl,
-                label: 'Lieu',
-                hint: 'Ex : Circuit de Ouagadougou',
-                icon: Icons.location_on_rounded),
+              controller: _lieuCtrl,
+              label: 'Lieu',
+              hint: 'Ex : Circuit de Ouagadougou',
+              icon: Icons.location_on_rounded,
+            ),
             const SizedBox(height: 14),
             // Notes
             _buildTextField(
@@ -694,7 +697,8 @@ class _SeanceFormState extends State<_SeanceForm> {
                 backgroundColor: _kTeal,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onPressed: _valid ? _soumettre : null,
             ),
@@ -721,16 +725,21 @@ class _SeanceFormState extends State<_SeanceForm> {
         filled: true,
         fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
         enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300)),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
         focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _kTeal, width: 2)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: _kTeal, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
       ),
     );
   }
@@ -777,13 +786,13 @@ class _DateField extends StatelessWidget {
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: hasValue ? color : Colors.grey.shade300,
-            width: hasValue ? 2 : 1),
+          color: hasValue ? color : Colors.grey.shade300,
+          width: hasValue ? 2 : 1,
+        ),
       ),
       child: Row(
         children: [
-          Icon(icon,
-              size: 16, color: hasValue ? color : Colors.grey.shade400),
+          Icon(icon, size: 16, color: hasValue ? color : Colors.grey.shade400),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -802,8 +811,11 @@ class _DateField extends StatelessWidget {
 }
 
 class _InfoBadge extends StatelessWidget {
-  const _InfoBadge(
-      {required this.icon, required this.label, required this.color});
+  const _InfoBadge({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
   final IconData icon;
   final String label;
   final Color color;
@@ -811,8 +823,7 @@ class _InfoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
@@ -822,9 +833,14 @@ class _InfoBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 11, color: color),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -832,11 +848,12 @@ class _InfoBadge extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
-  const _QuickAction(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final Color color;
@@ -851,9 +868,14 @@ class _QuickAction extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
