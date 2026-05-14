@@ -32,12 +32,12 @@ class UserRepository {
         'uid': userId,
         'email': email,
         'displayName': displayName,
-        'role': ?role,
+        if (role != null) 'role': role,
         'emailVerified': emailVerified,
         'provider': provider,
         if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt),
         if (lastLoginAt != null) 'lastLoginAt': Timestamp.fromDate(lastLoginAt),
-        'approved': ?approved,
+        if (approved != null) 'approved': approved,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
