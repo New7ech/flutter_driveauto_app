@@ -4,6 +4,7 @@
 library;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class SyncManager {
@@ -12,18 +13,27 @@ class SyncManager {
   SyncManager(this.firestore);
 
   Future<void> syncAll() async {
+    Box? syncBox;
     try {
-      final syncBox = await Hive.openBox('sync_queue');
+      syncBox = await Hive.openBox('sync_queue');
 
       final keys = syncBox.keys.toList();
       for (var key in keys) {
         final pendingData = syncBox.get(key);
         if (pendingData != null && pendingData is Map) {
-          final table = pendingData['table'] as String;
-          final payload = Map<String, dynamic>.from(pendingData['payload']);
-          final id = payload['id'] as String?;
+          final table = pendingData['table'] as String?;
+          final payload = pendingData['payload'];
+          
+          if (table == null || payload is! Map<String, dynamic>) {
+            await syncBox.delete(key);
+            continue;
+          }
 
-          if (id == null) continue;
+          final id = payload['id'] as String?;
+          if (id == null) {
+            await syncBox.delete(key);
+            continue;
+          }
 
           try {
             await firestore
@@ -32,12 +42,14 @@ class SyncManager {
                 .set(payload, SetOptions(merge: true));
             await syncBox.delete(key);
           } catch (e) {
-            // Echec pour cet élément, on le garde pour la prochaine tentative
+            debugPrint('Sync error for $table/$id: $e');
           }
         }
       }
     } catch (e) {
-      // Erreur globale de sync : on retentera plus tard
+      debugPrint('SyncManager error: $e');
+    } finally {
+      await syncBox?.close();
     }
   }
 }

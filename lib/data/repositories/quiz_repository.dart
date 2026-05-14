@@ -20,7 +20,7 @@ class QuizRepository {
     try {
       if (_firestore == null) throw Exception('Mock');
 
-      final snapshot = await _firestore.collection('quizzes').get();
+      final snapshot = await _firestore!.collection('quizzes').get();
       final quizzes = snapshot.docs.map((doc) {
         return Quiz.fromJson({...doc.data(), 'id': doc.id});
       }).toList();
@@ -31,9 +31,19 @@ class QuizRepository {
       }
       return quizzes;
     } catch (e) {
-      final cachedQuizzes = _box.values.cast<Quiz>().toList();
-      if (cachedQuizzes.isNotEmpty) {
-        return cachedQuizzes;
+      try {
+        final cachedQuizzes = <Quiz>[];
+        for (var value in _box.values) {
+          if (value is Quiz) {
+            cachedQuizzes.add(value);
+          }
+        }
+        if (cachedQuizzes.isNotEmpty) {
+          return cachedQuizzes;
+        }
+      } catch (_) {
+        // Type mismatch — clear box and continue
+        await _box.clear();
       }
 
       // Mode simulation basique

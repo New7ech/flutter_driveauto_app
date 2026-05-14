@@ -9,8 +9,9 @@ class Validators {
     if (value == null || value.trim().isEmpty) {
       return 'Veuillez renseigner votre email';
     }
-    final emailRegex = RegExp(r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+');
-    if (!emailRegex.hasMatch(value)) {
+    final emailRegex = RegExp(
+        r'^[a-zA-Z0-9.!#$%&*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$');
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Veuillez entrer une adresse email valide';
     }
     return null;

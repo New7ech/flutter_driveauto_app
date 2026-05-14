@@ -28,18 +28,25 @@ class UserRepository {
       final firestore = _firestore;
       if (firestore == null) return;
 
-      await firestore.collection('users').doc(userId).set({
+      final data = <String, dynamic>{
         'uid': userId,
         'email': email,
         'displayName': displayName,
-        'role': ?role,
         'emailVerified': emailVerified,
         'provider': provider,
-        if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt),
-        if (lastLoginAt != null) 'lastLoginAt': Timestamp.fromDate(lastLoginAt),
-        'approved': ?approved,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      // Ajout conditionnel des champs nullable
+      if (role != null) data['role'] = role;
+      if (approved != null) data['approved'] = approved;
+      if (createdAt != null) data['createdAt'] = Timestamp.fromDate(createdAt);
+      if (lastLoginAt != null) data['lastLoginAt'] = Timestamp.fromDate(lastLoginAt);
+
+      await firestore.collection('users').doc(userId).set(
+        data,
+        SetOptions(merge: true),
+      );
     } catch (e) {
       throw Exception('Erreur de sauvegarde du profil utilisateur : $e');
     }

@@ -20,7 +20,7 @@ class LeconRepository {
     try {
       if (_firestore == null) throw Exception('Mock');
 
-      final snapshot = await _firestore.collection('lecons').get();
+      final snapshot = await _firestore!.collection('lecons').get();
       final lecons = snapshot.docs.map((doc) {
         return Lecon.fromJson({...doc.data(), 'id': doc.id});
       }).toList();
@@ -31,9 +31,19 @@ class LeconRepository {
       }
       return lecons;
     } catch (e) {
-      final cachedLecons = _box.values.cast<Lecon>().toList();
-      if (cachedLecons.isNotEmpty) {
-        return cachedLecons;
+      try {
+        final cachedLecons = <Lecon>[];
+        for (var value in _box.values) {
+          if (value is Lecon) {
+            cachedLecons.add(value);
+          }
+        }
+        if (cachedLecons.isNotEmpty) {
+          return cachedLecons;
+        }
+      } catch (_) {
+        // Type mismatch — clear box and continue
+        await _box.clear();
       }
 
       // --- MODE SIMULATION UI (MOCK) ---

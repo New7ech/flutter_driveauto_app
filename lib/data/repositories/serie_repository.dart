@@ -21,7 +21,11 @@ class SerieRepository {
   SerieRepository(this._box, {FirebaseFirestore? firestore})
     : _firestore = firestore {
     _seedIfNeeded();
-    _seedFirestoreIfNeeded();
+    _initializeFirestore();
+  }
+
+  Future<void> _initializeFirestore() async {
+    await _seedFirestoreIfNeeded();
   }
 
   // ── Stream temps réel (Firestore) ou réactif Hive ───────────────
@@ -178,7 +182,7 @@ class SerieRepository {
 
   // Pousse les données par défaut dans Firestore si la collection est vide.
   // Fire-and-forget : les erreurs réseau sont ignorées.
-  void _seedFirestoreIfNeeded() async {
+  Future<void> _seedFirestoreIfNeeded() async {
     final fs = _firestore;
     if (fs == null) return;
     try {

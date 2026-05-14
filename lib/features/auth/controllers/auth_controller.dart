@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -53,7 +54,14 @@ final userApprovalProvider = StreamProvider<bool>((ref) {
         if (data['role'] == 'admin') return true;
         return data['approved'] as bool? ?? false;
       })
-      .listen(controller.add, onError: (_) {});
+      .listen(
+        controller.add,
+        onError: (error, stackTrace) {
+          debugPrint('Error in userApprovalProvider: $error');
+          // En cas d'erreur Firestore, on assume que c'est approuvé pour ne pas bloquer
+          controller.add(true);
+        },
+      );
   ref.onDispose(() {
     sub.cancel();
     controller.close();

@@ -59,13 +59,33 @@ Future<void> main() async {
     debugPrint('Fichier .env introuvable ou erreur de lecture: $e');
   }
 
-  await Hive.initFlutter();
-  await Hive.openBox(AppConstants.hiveLeconsBox);
-  await Hive.openBox(AppConstants.hiveQuizzesBox);
-  await Hive.openBox(AppConstants.hiveAuthUsersBox);
-  await Hive.openBox(AppConstants.hiveAuthSessionBox);
-  await Hive.openBox(AppConstants.hiveSeriesBox);
-  await Hive.openBox(AppConstants.hiveSeriesProgressBox);
+  // Initialize Hive with error handling
+  try {
+    await Hive.initFlutter();
+  } catch (e) {
+    debugPrint('Erreur lors de l initialisation de Hive: $e');
+  }
+
+  // Open all required Hive boxes with error handling
+  final boxNames = [
+    AppConstants.hiveLeconsBox,
+    AppConstants.hiveQuizzesBox,
+    AppConstants.hiveAuthUsersBox,
+    AppConstants.hiveAuthSessionBox,
+    AppConstants.hiveSeriesBox,
+    AppConstants.hiveSeriesProgressBox,
+  ];
+
+  for (final boxName in boxNames) {
+    try {
+      if (!Hive.isBoxOpen(boxName)) {
+        await Hive.openBox(boxName);
+        debugPrint('Opened Hive box: $boxName');
+      }
+    } catch (e) {
+      debugPrint('Erreur lors de l ouverture de la boite $boxName: $e');
+    }
+  }
 
   try {
     await Firebase.initializeApp(
@@ -107,11 +127,15 @@ class DriveAutoApp extends ConsumerWidget {
         return;
       }
 
-      final results = next.value!;
+      final results = next.valueOrNull;
+      if (results == null) {
+        return;
+      }
+
       final isOffline =
           results.contains(ConnectivityResult.none) || results.isEmpty;
 
-      final prevResults = previous?.value ?? <ConnectivityResult>[];
+      final prevResults = previous?.valueOrNull ?? <ConnectivityResult>[];
       final wasOffline =
           prevResults.contains(ConnectivityResult.none) || prevResults.isEmpty;
 

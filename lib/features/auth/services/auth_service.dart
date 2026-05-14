@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
+import 'package:crypto/crypto.dart' as crypto;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -527,13 +529,8 @@ class AuthService {
   }
 
   String _hashPassword(String password) {
-    var hash = 2166136261;
-
-    for (final codeUnit in password.codeUnits) {
-      hash ^= codeUnit;
-      hash = (hash * 16777619) & 0xffffffff;
-    }
-
-    return hash.toRadixString(16).padLeft(8, '0');
+    final bytes = utf8.encode(password);
+    final hashed = crypto.sha256.convert(bytes);
+    return hashed.toString();
   }
 }

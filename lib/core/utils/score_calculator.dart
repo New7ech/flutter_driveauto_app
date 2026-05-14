@@ -6,7 +6,8 @@ library;
 class ScoreCalculator {
   /// Calcule un pourcentage de progression
   static double calculateProgress(int completedLessons, int totalLessons) {
-    if (totalLessons <= 0 || completedLessons <= 0) return 0.0;
+    if (totalLessons <= 0) return 0.0;
+    if (completedLessons <= 0) return 0.0;
     if (completedLessons >= totalLessons) return 100.0;
     return (completedLessons / totalLessons) * 100.0;
   }

@@ -2,6 +2,7 @@
 // Rôle : Suivi local (Hive) de la progression par série pour l'apprenant.
 // Clé Hive : "{userId}_{serieId}" → index de la dernière slide vue.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -74,8 +75,70 @@ class SeriesProgressNotifier extends StateNotifier<Map<String, int>> {
 
 final seriesProgressProvider =
     StateNotifierProvider<SeriesProgressNotifier, Map<String, int>>((ref) {
-      final box = Hive.box(AppConstants.hiveSeriesProgressBox);
-      final user = ref.watch(currentAuthUserProvider);
-      final userId = user?.id ?? 'guest';
-      return SeriesProgressNotifier(box, userId);
+      try {
+        if (!Hive.isBoxOpen(AppConstants.hiveSeriesProgressBox)) {
+          throw Exception('SeriesProgressBox not initialized');
+        }
+        final box = Hive.box(AppConstants.hiveSeriesProgressBox);
+        final user = ref.watch(currentAuthUserProvider);
+        final userId = user?.id ?? 'guest';
+        return SeriesProgressNotifier(box, userId);
+      } catch (e) {
+        debugPrint('Error initializing SeriesProgressNotifier: $e');
+        // Return a notifier with empty state as fallback
+        return SeriesProgressNotifier(
+          _EmptyBox(),
+          'guest',
+        );
+      }
     });
+
+// Fallback box implementation for error cases
+class _EmptyBox implements Box {
+  @override
+  Future<void> clear() async {}
+  @override
+  Future<void> delete(dynamic key) async {}
+  @override
+  Future<void> deleteAll(Iterable keys) async {}
+  @override
+  Iterable<dynamic> get keys => [];
+  @override
+  Iterable<dynamic> get values => [];
+  @override
+  Future<void> put(dynamic key, dynamic value) async {}
+  @override
+  Future<void> putAll(Map<dynamic, dynamic> entries) async {}
+  @override
+  dynamic get(dynamic key) => null;
+  @override
+  Future<int> add(dynamic value) async => 0;
+  @override
+  bool containsKey(dynamic key) => false;
+  @override
+  Future<void> compact() async {}
+  @override
+  Future<void> deleteAt(int index) async {}
+  @override
+  dynamic getAt(int index) => null;
+  @override
+  void putAt(int index, dynamic value) {}
+  @override
+  Future<void> flush() async {}
+  @override
+  Stream<BoxEvent> watch({dynamic key}) => const Stream.empty();
+  @override
+  bool get isOpen => false;
+  @override
+  bool get isEmpty => true;
+  @override
+  bool get isNotEmpty => false;
+  @override
+  int get length => 0;
+  @override
+  String get name => 'empty';
+  @override
+  Future<void> close() async {}
+  @override
+  Future<void> deleteFromDisk() async {}
+}

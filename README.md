@@ -15,8 +15,7 @@ DriveAuto est une application mobile complète conçue pour révolutionner l'app
 ## ⚙️ Prérequis
 - **Flutter** ≥ 3.22
 - **Dart** ≥ 3.4
-- Un compte **Firebase** (plan gratuit) pour l'authentification et les notifications Push.
-- Un compte **Supabase** (plan gratuit) pour la base de données relationnelle.
+- Un compte **Firebase** (plan gratuit) pour l'authentification, la base de données Firestore, et les notifications Push.
 
 ## 🚀 Installation
 
@@ -42,43 +41,8 @@ cp .env.example .env
 3. Placez `google-services.json` dans le dossier `android/app/`.
 4. (Recommandé) Exécutez la commande `flutterfire configure` à la racine pour synchroniser toutes les plateformes.
 
-## 💾 Configuration Supabase
-Exécutez le script SQL suivant dans le SQL Editor de Supabase pour créer les tables indispensables :
-
-```sql
-CREATE TABLE lecons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titre TEXT NOT NULL,
-  contenu TEXT,
-  categorie TEXT,
-  video_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE quizzes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titre TEXT NOT NULL,
-  categorie TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  quiz_id UUID REFERENCES quizzes(id),
-  enonce TEXT NOT NULL,
-  options JSONB NOT NULL,
-  bonne_reponse INT NOT NULL,
-  explication TEXT
-);
-
-CREATE TABLE user_progress (
-  user_id TEXT NOT NULL,
-  lecon_id UUID REFERENCES lecons(id),
-  completed BOOLEAN DEFAULT FALSE,
-  score INT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+## 💾 Configuration Firebase Firestore
+Firestore est utilisé pour stocker les données utilisateurs, leçons, quizzes et résultats. Les règles de sécurité sont déjà configurées dans `firestore.rules`. Assurez-vous que votre projet Firebase a Firestore activé.
 
 ## 📱 Lancer l'app
 

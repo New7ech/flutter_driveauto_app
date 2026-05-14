@@ -3,6 +3,7 @@
 /// Auteur : DriveAuto Team
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,11 +24,26 @@ final firebaseFirestoreProvider = Provider<FirebaseFirestore?>((ref) {
 });
 
 final hiveLeconsBoxProvider = Provider<Box>((ref) {
-  return Hive.box(AppConstants.hiveLeconsBox);
+  try {
+    if (Hive.isBoxOpen(AppConstants.hiveLeconsBox)) {
+      return Hive.box(AppConstants.hiveLeconsBox);
+    }
+  } catch (e) {
+    debugPrintStack(label: 'Error accessing hiveLeconsBox: $e');
+  }
+  // Fallback to empty box-like object
+  throw Exception('hiveLeconsBox not properly initialized');
 });
 
 final hiveQuizzesBoxProvider = Provider<Box>((ref) {
-  return Hive.box(AppConstants.hiveQuizzesBox);
+  try {
+    if (Hive.isBoxOpen(AppConstants.hiveQuizzesBox)) {
+      return Hive.box(AppConstants.hiveQuizzesBox);
+    }
+  } catch (e) {
+    debugPrintStack(label: 'Error accessing hiveQuizzesBox: $e');
+  }
+  throw Exception('hiveQuizzesBox not properly initialized');
 });
 
 // --- FOURNISSEURS DES REPOSITORIES ---
