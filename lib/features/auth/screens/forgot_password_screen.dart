@@ -408,6 +408,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 text:
                     'L\'email vient de noreply@driveauto-ed6b7.firebaseapp.com',
               ),
+              SizedBox(height: 8),
+              _InfoRow(
+                icon: Icons.admin_panel_settings_outlined,
+                text:
+                    'Si l\'email n\'arrive pas, un admin peut le renvoyer depuis la fiche apprenant.',
+              ),
             ],
           ),
         ),

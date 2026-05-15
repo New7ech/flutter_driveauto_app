@@ -15,8 +15,8 @@ DriveAuto est une application mobile complète conçue pour révolutionner l'app
 ## ⚙️ Prérequis
 - **Flutter** ≥ 3.22
 - **Dart** ≥ 3.4
-- Un compte **Firebase** (plan gratuit) pour l'authentification et les notifications Push.
-- Un compte **Supabase** (plan gratuit) pour la base de données relationnelle.
+- Un compte **Firebase** pour l'authentification, Firestore, Analytics, Crashlytics et les notifications Push.
+- Un compte **Cloudinary** avec un upload preset unsigned pour les images des diapositives.
 
 ## 🚀 Installation
 
@@ -33,7 +33,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 # 4. Configurer l'environnement
 cp .env.example .env
-# Remplir .env avec tes clés Firebase et Supabase
+# Remplir .env avec les valeurs Firebase/Cloudinary
 ```
 
 ## 🔥 Configuration Firebase
@@ -42,43 +42,19 @@ cp .env.example .env
 3. Placez `google-services.json` dans le dossier `android/app/`.
 4. (Recommandé) Exécutez la commande `flutterfire configure` à la racine pour synchroniser toutes les plateformes.
 
-## 💾 Configuration Supabase
-Exécutez le script SQL suivant dans le SQL Editor de Supabase pour créer les tables indispensables :
+## 🖼️ Configuration Cloudinary
+1. Créez un upload preset en mode **Unsigned**.
+2. Limitez le preset aux formats `jpg`, `jpeg`, `png`, `webp`.
+3. Utilisez `driveauto/slides` comme dossier de ressources.
+4. Ajoutez les valeurs dans `.env` :
 
-```sql
-CREATE TABLE lecons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titre TEXT NOT NULL,
-  contenu TEXT,
-  categorie TEXT,
-  video_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE quizzes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  titre TEXT NOT NULL,
-  categorie TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE questions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  quiz_id UUID REFERENCES quizzes(id),
-  enonce TEXT NOT NULL,
-  options JSONB NOT NULL,
-  bonne_reponse INT NOT NULL,
-  explication TEXT
-);
-
-CREATE TABLE user_progress (
-  user_id TEXT NOT NULL,
-  lecon_id UUID REFERENCES lecons(id),
-  completed BOOLEAN DEFAULT FALSE,
-  score INT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+```env
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_UPLOAD_PRESET=your-unsigned-upload-preset
+CLOUDINARY_SLIDES_FOLDER=driveauto/slides
 ```
+
+Ne mettez jamais `CLOUDINARY_API_SECRET` dans l'application Flutter.
 
 ## 📱 Lancer l'app
 
@@ -99,7 +75,7 @@ L'application respecte la **Clean Architecture** couplée à **Riverpod** pour l
 ```text
 lib/
 ├── core/                   # Cœur de l'application (thème, constantes, utils, validateurs)
-├── data/                   # Couche Data : Implémentations des repositories (Hive, Supabase, Firestore)
+├── data/                   # Couche Data : Implémentations des repositories (Hive, Firestore)
 ├── domain/                 # Couche Domaine : Modèles de données (Lecon, Quiz, Practice) avec Freezed
 ├── features/               # Fonctionnalités cloisonnées (Auth, Courses, Quizzes, Simulation, Dashboard...)
 │   ├── [feature]/

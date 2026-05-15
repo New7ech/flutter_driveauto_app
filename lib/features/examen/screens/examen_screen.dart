@@ -2,6 +2,9 @@
 // Role : Examen blanc 40 questions QCM — design premium avec badges lettres
 
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -614,29 +617,65 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
     );
   }
 
+  Widget _buildImageLoading() {
+    return Container(
+      height: 150,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppConstants.primaryColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(color: AppConstants.primaryColor),
+      ),
+    );
+  }
+
   Widget _buildQuestionImage(QuestionExamen question) {
     final imagePath = question.diapositive.imagePath;
     if (imagePath == null || imagePath.isEmpty) {
       return _buildImagePlaceholder(question);
     }
 
-    final image = imagePath.startsWith('http')
-        ? Image.network(
-            imagePath,
-            height: 150,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
-          )
-        : Image.asset(
-            imagePath,
-            height: 150,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
-          );
+    final image = _buildQuestionImageWidget(imagePath, question);
 
     return ClipRRect(borderRadius: BorderRadius.circular(14), child: image);
+  }
+
+  Widget _buildQuestionImageWidget(String imagePath, QuestionExamen question) {
+    if (imagePath.startsWith('data:image/')) {
+      try {
+        final b64 = imagePath.substring(imagePath.indexOf(',') + 1);
+        return Image.memory(
+          base64Decode(b64),
+          height: 150,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
+        );
+      } catch (_) {
+        return _buildImagePlaceholder(question);
+      }
+    }
+
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: imagePath,
+        height: 150,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (_, _) => _buildImageLoading(),
+        errorWidget: (_, _, _) => _buildImagePlaceholder(question),
+      );
+    }
+
+    return Image.asset(
+      imagePath,
+      height: 150,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _buildImagePlaceholder(question),
+    );
   }
 
   // ────────────────────────────────────────────────────────────────────

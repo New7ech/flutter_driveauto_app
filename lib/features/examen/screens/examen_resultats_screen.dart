@@ -34,9 +34,17 @@ class _ExamenResultatsScreenState extends ConsumerState<ExamenResultatsScreen> {
       final user = ref.read(currentAuthUserProvider);
       if (user == null) return;
       final s = widget.examenState;
+      final email = user.email.trim();
+      final displayName = user.displayName.trim().isNotEmpty
+          ? user.displayName.trim()
+          : email.isNotEmpty
+          ? email.split('@').first
+          : 'Apprenant';
       await FirebaseFirestore.instance.collection('resultats_examens').add({
         'apprenantId': user.id,
-        'apprenantNom': user.displayName,
+        'apprenantUid': user.id,
+        'apprenantNom': displayName,
+        'apprenantEmail': email,
         'score': s.nombreReponsesCorrectes,
         'total': s.total,
         'pourcentage': s.total == 0

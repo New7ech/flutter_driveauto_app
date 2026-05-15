@@ -2,6 +2,7 @@
 // Role : Gestion complète des apprenants (liste, recherche, édition, suppression)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -132,6 +133,98 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _sendPasswordResetEmail(Map<String, dynamic> user) async {
+    final email = (user['email'] as String? ?? '').trim();
+    final name =
+        user['displayName'] as String? ??
+        (email.isNotEmpty ? email.split('@').first : 'cet apprenant');
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Impossible : aucun email sur ce profil.'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reinitialiser le mot de passe'),
+        content: Text(
+          'Envoyer un email de reinitialisation a "$name" ?\n\n'
+          'Adresse : $email',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppConstants.primaryColor,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Envoyer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email de reinitialisation envoye a $email.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppConstants.primaryColor,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_formatPasswordResetError(e)),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur : $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatPasswordResetError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return 'Adresse email invalide.';
+      case 'user-not-found':
+        return 'Aucun compte Firebase Auth ne correspond a cet email.';
+      case 'too-many-requests':
+        return 'Trop de demandes. Reessayez plus tard.';
+      case 'network-request-failed':
+        return 'Connexion internet indisponible. Reessayez en ligne.';
+      default:
+        return 'Impossible d envoyer l email : ${e.message ?? e.code}';
     }
   }
 
@@ -280,6 +373,8 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                               _confirmDelete(context, filtered[index]),
                           onProgress: () =>
                               _showProgressDialog(context, filtered[index]),
+                          onResetPassword: () =>
+                              _sendPasswordResetEmail(filtered[index]),
                           onApprove: () => _approveUser(filtered[index]),
                         ),
                       ),
@@ -636,6 +731,7 @@ class _UserCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onProgress,
+    required this.onResetPassword,
     this.onApprove,
   });
 
@@ -643,6 +739,7 @@ class _UserCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onProgress;
+  final VoidCallback onResetPassword;
   final VoidCallback? onApprove;
 
   String get _uid => data['id'] as String? ?? data['uid'] as String? ?? '';
@@ -736,6 +833,13 @@ class _UserCard extends StatelessWidget {
                       color: Colors.teal,
                       tooltip: 'Progression',
                       onTap: onProgress,
+                    ),
+                    const SizedBox(width: 4),
+                    _ActionIcon(
+                      icon: Icons.mark_email_read_outlined,
+                      color: Colors.orange.shade700,
+                      tooltip: 'Reinitialiser le mot de passe',
+                      onTap: onResetPassword,
                     ),
                     const SizedBox(width: 4),
                     // Modifier nom

@@ -1,12 +1,14 @@
 // DriveAuto — slide_viewer_screen.dart
 // Role : Visionneuse de diapositives avec exercices intégrés — design premium
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/models/serie.dart';
@@ -30,6 +32,7 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
   final Map<String, int> _selectedAnswers = {};
   final Map<String, bool> _validated = {};
   final Map<String, Set<int>> _checklistSelections = {};
+  final Set<String> _prefetchedImageUrls = {};
 
   @override
   void initState() {
@@ -90,6 +93,7 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
       );
     }
 
+    _prefetchSlideImages(serie);
     _initProgress();
 
     final progress = total == 0 ? 0.0 : (_currentPage + 1) / total;
@@ -271,25 +275,6 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
       return _wrapSlideImage(_buildNetworkImage(source, diapo, couleur));
     }
 
-    if (_isFirebaseStorageReference(source)) {
-      return FutureBuilder<String>(
-        future: _resolveFirebaseStorageUrl(source),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return _wrapSlideImage(
-              _buildNetworkImage(snapshot.data!, diapo, couleur),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return _buildImagePlaceholder(diapo, couleur);
-          }
-
-          return _buildImageLoading(couleur);
-        },
-      );
-    }
-
     if (_isLocalFilePath(source)) {
       return _wrapSlideImage(
         Image.file(
@@ -325,28 +310,32 @@ class _SlideViewerScreenState extends ConsumerState<SlideViewerScreen> {
     return source.startsWith('/') || (source.length > 2 && source[1] == ':');
   }
 
-  bool _isFirebaseStorageReference(String source) {
-    return source.startsWith('gs://') || source.startsWith('series/');
+  void _prefetchSlideImages(Serie serie) {
+    for (final diapo in serie.diapositives) {
+      final url = diapo.imagePath?.trim();
+      if (url == null || !_isHttpUrl(url) || !_prefetchedImageUrls.add(url)) {
+        continue;
+      }
+      unawaited(_cacheNetworkImage(url));
+    }
   }
 
-  Future<String> _resolveFirebaseStorageUrl(String source) {
-    final ref = source.startsWith('gs://')
-        ? FirebaseStorage.instance.refFromURL(source)
-        : FirebaseStorage.instance.ref(source);
-    return ref.getDownloadURL();
+  Future<void> _cacheNetworkImage(String url) async {
+    try {
+      await DefaultCacheManager().downloadFile(url);
+    } catch (_) {
+      // Offline support should not block the slide viewer.
+    }
   }
 
   Widget _buildNetworkImage(String url, Diapositive diapo, Color couleur) {
-    return Image.network(
-      url,
+    return CachedNetworkImage(
+      imageUrl: url,
       height: 220,
       width: double.infinity,
       fit: BoxFit.cover,
-      errorBuilder: (_, e, s) => _buildImagePlaceholder(diapo, couleur),
-      loadingBuilder: (_, child, progress) {
-        if (progress == null) return child;
-        return _buildImageLoading(couleur);
-      },
+      placeholder: (_, _) => _buildImageLoading(couleur),
+      errorWidget: (_, _, _) => _buildImagePlaceholder(diapo, couleur),
     );
   }
 

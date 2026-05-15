@@ -81,22 +81,17 @@ class SerieRepository {
     } else {
       all.add(serie);
     }
-    await _persist(all);
     await _firestore
         ?.collection(_collection)
         .doc(serie.id)
-        .set(_serieToMap(serie))
-        .catchError((_) {});
+        .set(_serieToMap(serie));
+    await _persist(all);
   }
 
   Future<void> deleteSerie(String id) async {
     final all = getAllSeries()..removeWhere((s) => s.id == id);
+    await _firestore?.collection(_collection).doc(id).delete();
     await _persist(all);
-    await _firestore
-        ?.collection(_collection)
-        .doc(id)
-        .delete()
-        .catchError((_) {});
   }
 
   Future<void> saveDiapositive(String serieId, Diapositive diapo) async {
@@ -123,12 +118,11 @@ class SerieRepository {
       emoji: serie.emoji,
       diapositives: sorted,
     );
-    await _persist(all);
     await _firestore
         ?.collection(_collection)
         .doc(serieId)
-        .set(_serieToMap(all[idx]))
-        .catchError((_) {});
+        .set(_serieToMap(all[idx]));
+    await _persist(all);
   }
 
   Future<void> deleteDiapositive(String serieId, String diapoId) async {
@@ -147,25 +141,24 @@ class SerieRepository {
       emoji: serie.emoji,
       diapositives: slides,
     );
-    await _persist(all);
     await _firestore
         ?.collection(_collection)
         .doc(serieId)
-        .set(_serieToMap(all[idx]))
-        .catchError((_) {});
+        .set(_serieToMap(all[idx]));
+    await _persist(all);
   }
 
   /// Remet les donnees par defaut (CoursData.series) — local + Firestore.
   Future<void> resetToDefaults() async {
-    await _persist(CoursData.series);
     final fs = _firestore;
     if (fs != null) {
       final batch = fs.batch();
       for (final serie in CoursData.series) {
         batch.set(fs.collection(_collection).doc(serie.id), _serieToMap(serie));
       }
-      await batch.commit().catchError((_) {});
+      await batch.commit();
     }
+    await _persist(CoursData.series);
   }
 
   // ── Persistence interne ──────────────────────────────────────────

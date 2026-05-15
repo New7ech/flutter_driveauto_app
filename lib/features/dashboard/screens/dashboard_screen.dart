@@ -2,12 +2,14 @@
 // Role: Ecran d'accueil pour l'apprenant — design premium avec gradient BF
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../domain/models/user_progress.dart';
+import '../../../providers/connectivity_provider.dart';
 import '../../../providers/repository_providers.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/app_auth_user.dart';
@@ -93,6 +95,61 @@ final seancesApprenantProvider = StreamProvider<List<Map<String, dynamic>>>((
           });
       });
 });
+
+Future<void> _confirmAndLogout(BuildContext context, WidgetRef ref) async {
+  final connectivity = ref.read(connectivityProvider).valueOrNull;
+  final offline =
+      connectivity != null &&
+      (connectivity.isEmpty ||
+          connectivity.every((result) => result == ConnectivityResult.none));
+
+  if (offline) {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connexion requise'),
+        content: const Text(
+          'Vous etes hors ligne. Gardez la session ouverte pour consulter les cours hors connexion. '
+          'La reconnexion necessite Internet.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Compris'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  final confirmed =
+      await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Se deconnecter ?'),
+          content: const Text(
+            'Apres deconnexion, il faudra une connexion Internet pour vous reconnecter '
+            'ou reinitialiser le mot de passe.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Se deconnecter'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
+  if (!confirmed || !context.mounted) return;
+  await ref.read(authControllerProvider.notifier).logout();
+  if (context.mounted) context.go(AppConstants.routeLogin);
+}
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -223,10 +280,7 @@ class DashboardScreen extends ConsumerWidget {
                       size: 22,
                     ),
                     tooltip: 'Se déconnecter',
-                    onPressed: () {
-                      ref.read(authControllerProvider.notifier).logout();
-                      context.go(AppConstants.routeLogin);
-                    },
+                    onPressed: () => _confirmAndLogout(context, ref),
                   ),
                 ],
               ),

@@ -15,12 +15,63 @@ final _resultatsExamensProvider =
           .collection('resultats_examens')
           .orderBy('datePassage', descending: true)
           .snapshots()
-          .map(
-            (snap) => snap.docs
+          .asyncMap((snap) async {
+            final resultats = snap.docs
                 .map((d) => <String, dynamic>{'id': d.id, ...d.data()})
-                .toList(),
-          );
+                .toList();
+
+            final hasMissingIdentity = resultats.any(
+              (r) =>
+                  _readString(r, 'apprenantNom').isEmpty ||
+                  _readString(r, 'apprenantEmail').isEmpty,
+            );
+            if (!hasMissingIdentity) return resultats;
+
+            final Map<String, Map<String, dynamic>> usersById;
+            try {
+              final usersSnap = await FirebaseFirestore.instance
+                  .collection('users')
+                  .get();
+              usersById = {
+                for (final doc in usersSnap.docs) doc.id: doc.data(),
+              };
+            } catch (_) {
+              return resultats;
+            }
+
+            return resultats.map((result) {
+              final uid = _resultUserId(result);
+              final profile = usersById[uid];
+              if (profile == null) return result;
+
+              final merged = Map<String, dynamic>.from(result);
+              if (_readString(merged, 'apprenantNom').isEmpty) {
+                final name = _readString(profile, 'displayName');
+                if (name.isNotEmpty) merged['apprenantNom'] = name;
+              }
+              if (_readString(merged, 'apprenantEmail').isEmpty) {
+                final email = _readString(profile, 'email');
+                if (email.isNotEmpty) merged['apprenantEmail'] = email;
+              }
+              return merged;
+            }).toList();
+          });
     });
+
+String _readString(Map<String, dynamic> data, String key) {
+  return (data[key] as String? ?? '').trim();
+}
+
+String _resultUserId(Map<String, dynamic> data) {
+  final uid = _readString(data, 'apprenantUid');
+  if (uid.isNotEmpty) return uid;
+  return _readString(data, 'apprenantId');
+}
+
+String _shortId(String id) {
+  if (id.length <= 10) return id;
+  return '${id.substring(0, 10)}...';
+}
 
 enum _Filtre { tous, recus, recales }
 
@@ -272,9 +323,21 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reussi = data['reussi'] as bool? ?? false;
-    final nom = data['apprenantNom'] as String? ?? 'Apprenant inconnu';
-    final score = data['score'] as int? ?? 0;
-    final total = data['total'] as int? ?? 0;
+    final email = _readString(data, 'apprenantEmail');
+    final uid = _resultUserId(data);
+    final rawNom = _readString(data, 'apprenantNom');
+    final nom = rawNom.isNotEmpty
+        ? rawNom
+        : email.isNotEmpty
+        ? email.split('@').first
+        : 'Apprenant inconnu';
+    final identity = email.isNotEmpty
+        ? email
+        : uid.isNotEmpty
+        ? 'ID: ${_shortId(uid)}'
+        : 'Identite non disponible';
+    final score = (data['score'] as num?)?.toInt() ?? 0;
+    final total = (data['total'] as num?)?.toInt() ?? 0;
     final pct = data['pourcentage'] as num? ?? 0.0;
     final ts = data['datePassage'];
     final date = ts is Timestamp ? ts.toDate() : null;
@@ -337,6 +400,13 @@ class _ResultCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
+                  Text(
+                    identity,
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     dateStr,
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade500),

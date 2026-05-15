@@ -4,7 +4,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,18 +13,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/services/media_upload_service.dart';
 import '../../../data/repositories/serie_repository.dart';
 import '../../../domain/models/serie.dart';
 import '../../../providers/serie_provider.dart';
-
-class _SlideImageException implements Exception {
-  const _SlideImageException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => message;
-}
 
 class AdminSlideFormScreen extends ConsumerStatefulWidget {
   const AdminSlideFormScreen({
@@ -55,7 +48,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
   final Set<int> _reponsesCorrectes = {};
 
   // ── Image ──
-  String? _imageUrl; // URL existante (depuis Firestore/Storage ou saisie)
+  String? _imageUrl; // URL existante ou saisie manuellement
   XFile? _imageFile; // Image fraîchement choisie depuis la galerie
   bool _isPickingImage = false;
   bool _isUploadingImage = false;
@@ -139,6 +132,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
         setState(() {
           _imageFile = picked;
           _imageUrl = null; // l'ancienne URL est remplacée
+          _imageUrlCtrl.clear();
         });
       }
     } on PlatformException catch (e) {
@@ -191,24 +185,16 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     final existingImage = _imageUrlCtrl.text.trim();
     if (_imageFile == null) {
       if (existingImage.isEmpty) return null;
-      // If it's an http link or a reference, return it as is
       return existingImage;
     }
 
     setState(() => _isUploadingImage = true);
     try {
-      final bytes = await _imageFile!.readAsBytes();
-      final kbSize = bytes.length / 1024;
-      
-      // Limite de 700 Ko pour le stockage direct en base64 (limite Firestore ~1Mo)
-      if (kbSize > 700) {
-        throw _SlideImageException(
-          "L'image fait ${kbSize.toStringAsFixed(1)} Ko. La limite est de 700 Ko sans Firebase Storage. Veuillez choisir une image plus petite ou coller un lien web.",
-        );
-      }
-      
-      final base64String = base64Encode(bytes);
-      return 'data:image/png;base64,$base64String';
+      return const MediaUploadService().uploadSlideImage(
+        file: _imageFile!,
+        serieId: widget.serieId,
+        diapoId: diapoId,
+      );
     } finally {
       if (mounted) {
         setState(() => _isUploadingImage = false);
@@ -216,24 +202,12 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     }
   }
 
-
   bool _isHttpUrl(String source) {
     return source.startsWith('http://') || source.startsWith('https://');
   }
 
   bool _isLocalFilePath(String source) {
     return source.startsWith('/') || (source.length > 2 && source[1] == ':');
-  }
-
-  bool _isFirebaseStorageReference(String source) {
-    return source.startsWith('gs://') || source.startsWith('series/');
-  }
-
-  Future<String> _resolveFirebaseStorageUrl(String source) {
-    final ref = source.startsWith('gs://')
-        ? FirebaseStorage.instance.refFromURL(source)
-        : FirebaseStorage.instance.ref(source);
-    return ref.getDownloadURL();
   }
 
   // ─────────────────────────────────────────────────────────────────
@@ -454,6 +428,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
                     : () => setState(() {
                         _imageFile = null;
                         _imageUrl = null;
+                        _imageUrlCtrl.clear();
                       }),
               ),
               const SizedBox(width: 4),
@@ -607,37 +582,14 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     }
 
     if (_isHttpUrl(source)) {
-      return Image.network(
-        source,
+      return CachedNetworkImage(
+        imageUrl: source,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _buildPickerPlaceholder(),
-        loadingBuilder: (_, child, progress) {
-          if (progress == null) return child;
+        errorWidget: (_, _, _) => _buildPickerPlaceholder(),
+        placeholder: (_, _) {
           return Center(
-            child: CircularProgressIndicator(
-              value: progress.expectedTotalBytes != null
-                  ? progress.cumulativeBytesLoaded /
-                        progress.expectedTotalBytes!
-                  : null,
-            ),
+            child: CircularProgressIndicator(color: AppConstants.primaryColor),
           );
-        },
-      );
-    }
-
-    if (_isFirebaseStorageReference(source)) {
-      return FutureBuilder<String>(
-        future: _resolveFirebaseStorageUrl(source),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return Image.network(
-              snapshot.data!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _buildPickerPlaceholder(),
-            );
-          }
-          if (snapshot.hasError) return _buildPickerPlaceholder();
-          return const Center(child: CircularProgressIndicator());
         },
       );
     }
@@ -659,32 +611,11 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
   }
 
   String _formatSaveError(Object error) {
-    if (error is _SlideImageException) return error.message;
+    if (error is MediaUploadException) return error.message;
 
     if (error is FirebaseException) {
       final message = error.message?.trim();
       final suffix = message == null || message.isEmpty ? '' : ' ($message)';
-
-      if (error.plugin == 'firebase_storage') {
-        switch (error.code) {
-          case 'unauthenticated':
-            return 'Vous devez être connecté à Firebase pour envoyer une image.';
-          case 'unauthorized':
-            return "Upload refusé par Firebase Storage. Vérifiez que storage.rules est déployé et que votre document users/${FirebaseAuth.instance.currentUser?.uid ?? '<uid>'} contient role: admin.";
-          case 'bucket-not-found':
-            return "Bucket Firebase Storage introuvable. Allez dans la console Firebase, onglet 'Storage', et cliquez sur 'Commencer' pour l'activer.";
-          case 'quota-exceeded':
-            return 'Quota Firebase Storage dépassé.';
-          case 'retry-limit-exceeded':
-            return 'Connexion trop instable pour envoyer l’image. Réessayez.';
-          case 'canceled':
-            return "L'envoi de l'image a été annulé.";
-          case 'object-not-found':
-            return "Image introuvable ou Storage non activé. Vérifiez que l'onglet 'Storage' est activé dans la console Firebase, puis réessayez.";
-          default:
-            return 'Erreur Firebase Storage ${error.code}$suffix';
-        }
-      }
 
       if (error.plugin == 'cloud_firestore') {
         switch (error.code) {
@@ -937,7 +868,7 @@ class _AdminSlideFormScreenState extends ConsumerState<AdminSlideFormScreen> {
     setState(() => _saving = true);
 
     try {
-      // Déterminer l'ID de la diapo avant l'upload (pour le chemin Storage)
+      // Déterminer l'ID de la diapo avant l'upload média.
       final diapoId =
           widget.diapoExistante?.id ?? SerieRepository.generateId('d');
 

@@ -32,8 +32,7 @@ final userDeletionWatcherProvider = StreamProvider<bool>((ref) {
 
 // Émet true quand le compte est approuvé par l'admin.
 // Les admins et le mode local sont toujours considérés comme approuvés.
-// Émet false immédiatement pour éviter de bloquer le routeur indéfiniment
-// (ex. hors-ligne sans cache Firestore).
+// Utilise le dernier statut approuvé en cache pour garder l'accès hors ligne.
 final userApprovalProvider = StreamProvider<bool>((ref) {
   final user = ref.watch(currentAuthUserProvider);
   final firestore = ref.watch(firebaseFirestoreProvider);
@@ -42,7 +41,7 @@ final userApprovalProvider = StreamProvider<bool>((ref) {
   if (firestore == null) return Stream.value(true);
 
   final controller = StreamController<bool>();
-  controller.add(false); // valeur immédiate pendant que Firestore répond
+  controller.add(_readCachedApproval(user.id) ?? false);
   final sub = firestore
       .collection('users')
       .doc(user.id)
@@ -50,8 +49,11 @@ final userApprovalProvider = StreamProvider<bool>((ref) {
       .map((snap) {
         final data = snap.data();
         if (data == null) return false;
-        if (data['role'] == 'admin') return true;
-        return data['approved'] as bool? ?? false;
+        final approved = data['role'] == 'admin'
+            ? true
+            : data['approved'] as bool? ?? false;
+        _writeCachedApproval(user.id, approved);
+        return approved;
       })
       .listen(controller.add, onError: (_) {});
   ref.onDispose(() {
@@ -60,6 +62,27 @@ final userApprovalProvider = StreamProvider<bool>((ref) {
   });
   return controller.stream;
 });
+
+bool? _readCachedApproval(String userId) {
+  try {
+    if (!Hive.isBoxOpen(AppConstants.hiveAuthSessionBox)) return null;
+    return Hive.box(AppConstants.hiveAuthSessionBox).get('approval_$userId')
+        as bool?;
+  } catch (_) {
+    return null;
+  }
+}
+
+void _writeCachedApproval(String userId, bool approved) {
+  try {
+    if (!Hive.isBoxOpen(AppConstants.hiveAuthSessionBox)) return;
+    unawaited(
+      Hive.box(
+        AppConstants.hiveAuthSessionBox,
+      ).put('approval_$userId', approved),
+    );
+  } catch (_) {}
+}
 
 final firebaseAuthProvider = Provider<FirebaseAuth?>((ref) {
   if (Firebase.apps.isEmpty) {
@@ -377,6 +400,14 @@ class AuthController extends AsyncNotifier<void> {
           return 'Format d email invalide.';
         case 'weak-password':
           return 'Le mot de passe est trop faible.';
+        case 'missing-email':
+          return 'Renseignez l email du compte.';
+        case 'user-disabled':
+          return 'Ce compte est desactive. Contactez l administrateur.';
+        case 'network-request-failed':
+          return 'Connexion internet indisponible. Reessayez en ligne.';
+        case 'operation-not-allowed':
+          return 'La connexion par email/mot de passe n est pas activee dans Firebase.';
         case 'too-many-requests':
           return 'Trop de tentatives. Reessayez dans quelques instants.';
         default:
