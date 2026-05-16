@@ -12,6 +12,41 @@ class UserRepository {
   UserRepository({required FirebaseFirestore? firestore})
     : _firestore = firestore;
 
+  static const _transientFirestoreCodes = {
+    'aborted',
+    'cancelled',
+    'deadline-exceeded',
+    'internal',
+    'resource-exhausted',
+    'unavailable',
+    'unknown',
+  };
+
+  bool _isTransientFirestoreError(Object error) {
+    return error is FirebaseException &&
+        error.plugin == 'cloud_firestore' &&
+        _transientFirestoreCodes.contains(error.code);
+  }
+
+  Future<T> _retryTransientFirestore<T>(
+    Future<T> Function() operation,
+  ) async {
+    Object? lastError;
+
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await operation();
+      } on FirebaseException catch (e) {
+        if (!_isTransientFirestoreError(e)) rethrow;
+        lastError = e;
+        if (attempt == 2) rethrow;
+        await Future<void>.delayed(Duration(milliseconds: 300 * (attempt + 1)));
+      }
+    }
+
+    throw lastError ?? StateError('Firestore retry failed');
+  }
+
   Future<void> saveUserProfile({
     required String userId,
     required String email,
@@ -49,14 +84,16 @@ class UserRepository {
     try {
       final firestore = _firestore;
       if (firestore == null) return null;
-      final doc = await firestore
-          .collection('users_progress')
-          .doc(userId)
-          .get();
+      final doc = await _retryTransientFirestore(
+        () => firestore.collection('users_progress').doc(userId).get(),
+      );
       if (doc.exists && doc.data() != null) {
         return UserProgress.fromJson(doc.data()!);
       }
       return null;
+    } on FirebaseException catch (e) {
+      if (_isTransientFirestoreError(e)) return null;
+      throw Exception('Erreur de recuperation de la progression : $e');
     } catch (e) {
       throw Exception('Erreur de recuperation de la progression : $e');
     }
