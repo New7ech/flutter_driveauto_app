@@ -18,63 +18,77 @@ final practiceListProvider = FutureProvider<List<PracticeSession>>((ref) async {
 class PracticeListScreen extends ConsumerWidget {
   const PracticeListScreen({super.key});
 
+  void _goBackToDashboard(BuildContext context) {
+    context.go(AppConstants.routeDashboard);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final practiceState = ref.watch(practiceListProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pratique & Checklist'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(practiceListProvider),
-            tooltip: 'Actualiser',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBackToDashboard(context);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Pratique & Checklist'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => _goBackToDashboard(context),
           ),
-        ],
-      ),
-      body: practiceState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur: $e')),
-        data: (sessions) {
-          if (sessions.isEmpty) {
-            return const Center(
-              child: Text('Aucune session pratique pour le moment.'),
-            );
-          }
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(practiceListProvider),
+              tooltip: 'Actualiser',
+            ),
+          ],
+        ),
+        body: practiceState.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Erreur: $e')),
+          data: (sessions) {
+            if (sessions.isEmpty) {
+              return const Center(
+                child: Text('Aucune session pratique pour le moment.'),
+              );
+            }
 
-          // Regrouper par catégorie
-          final grouped = <String, List<PracticeSession>>{};
-          for (var s in sessions) {
-            grouped.putIfAbsent(s.category, () => []).add(s);
-          }
+            // Regrouper par catégorie
+            final grouped = <String, List<PracticeSession>>{};
+            for (var s in sessions) {
+              grouped.putIfAbsent(s.category, () => []).add(s);
+            }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: grouped.entries.map((entry) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: Text(
-                      entry.key.toUpperCase(),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppConstants.primaryColor,
-                        letterSpacing: 1.2,
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: grouped.entries.map((entry) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: Text(
+                        entry.key.toUpperCase(),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppConstants.primaryColor,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
-                  ),
-                  ...entry.value.map(
-                    (session) => _PracticeCard(session: session),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              );
-            }).toList(),
-          );
-        },
+                    ...entry.value.map(
+                      (session) => _PracticeCard(session: session),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }).toList(),
+            );
+          },
+        ),
       ),
     );
   }

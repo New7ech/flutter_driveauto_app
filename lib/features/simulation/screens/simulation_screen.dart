@@ -20,6 +20,10 @@ class _SimulationScreenState extends State<SimulationScreen> {
   late ParkingGame _game;
   bool _isWon = false;
 
+  void _goBackToDashboard() {
+    context.go(AppConstants.routeDashboard);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,7 +64,7 @@ class _SimulationScreenState extends State<SimulationScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Fermer la modale
-                context.pop(); // Revenir au menu principal
+                _goBackToDashboard(); // Revenir au menu principal
               },
               child: const Text(
                 'Quitter',
@@ -99,31 +103,41 @@ class _SimulationScreenState extends State<SimulationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Simulateur de Manœuvre'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'Aide',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Utilisez le Joystick en bas à gauche pour vous garer dans la zone P !',
-                  ),
-                  duration: Duration(seconds: 4),
-                ),
-              );
-            },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBackToDashboard();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _goBackToDashboard,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: GameWidget(
-          game: _game, // Le pont entre Flutter et Flame
-          loadingBuilder: (context) =>
-              const Center(child: CircularProgressIndicator()),
+          title: const Text('Simulateur de Manœuvre'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.help_outline),
+              tooltip: 'Aide',
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Utilisez le Joystick en bas à gauche pour vous garer dans la zone P !',
+                    ),
+                    duration: Duration(seconds: 4),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: GameWidget(
+            game: _game, // Le pont entre Flutter et Flame
+            loadingBuilder: (context) =>
+                const Center(child: CircularProgressIndicator()),
+          ),
         ),
       ),
     );

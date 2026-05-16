@@ -742,28 +742,28 @@ class DashboardScreen extends ConsumerWidget {
         label: 'Cours',
         subtitle: 'Séries & slides',
         colors: [const Color(0xFF00A86B), const Color(0xFF005C38)],
-        onTap: () => context.go(AppConstants.routeSeries),
+        onTap: () => context.push(AppConstants.routeSeries),
       ),
       _NavItem(
         icon: Icons.school_rounded,
         label: 'Examen',
         subtitle: '40 questions',
         colors: [const Color(0xFFEF0107), const Color(0xFF8B0000)],
-        onTap: () => context.go(AppConstants.routeExamen),
+        onTap: () => context.push(AppConstants.routeExamen),
       ),
       _NavItem(
         icon: Icons.checklist_rounded,
         label: 'Pratique',
         subtitle: 'Checklists',
         colors: [const Color(0xFFFCD116), const Color(0xFFB89800)],
-        onTap: () => context.go(AppConstants.routePractice),
+        onTap: () => context.push(AppConstants.routePractice),
       ),
       _NavItem(
         icon: Icons.directions_car_rounded,
         label: 'Simulation',
         subtitle: 'Jeu de conduite',
         colors: [const Color(0xFF2196F3), const Color(0xFF0D47A1)],
-        onTap: () => context.go(AppConstants.routeSimulation),
+        onTap: () => context.push(AppConstants.routeSimulation),
       ),
     ];
 

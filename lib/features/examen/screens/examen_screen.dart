@@ -58,11 +58,7 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
   void _quitterExamen() {
     _timer?.cancel();
     ref.read(examenProvider.notifier).reset();
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go(AppConstants.routeDashboard);
-    }
+    context.go(AppConstants.routeDashboard);
   }
 
   String get _tempsFormate {
@@ -212,158 +208,169 @@ class _ExamenScreenState extends ConsumerState<ExamenScreen> {
         .where((d) => d.aUneQuestion)
         .length;
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // Header gradient
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppConstants.primaryColor, Color(0xFF005C38)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(36),
-                  bottomRight: Radius.circular(36),
-                ),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 12, 36),
-                  child: Column(
-                    children: [
-                      // Top bar avec retour
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              color: Colors.white,
-                            ),
-                            onPressed: () => Navigator.of(context).maybePop(),
-                          ),
-                          const Spacer(),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Icône animée
-                      Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Text('🎓', style: TextStyle(fontSize: 46)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Examen Blanc',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          'Testez vos connaissances sur toutes les séries de cours',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _quitterExamen();
+      },
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            // Header gradient
+            SliverToBoxAdapter(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppConstants.primaryColor, Color(0xFF005C38)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(36),
+                    bottomRight: Radius.circular(36),
                   ),
                 ),
-              ),
-            ),
-          ),
-
-          // Contenu
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                _buildInfoCard(context, totalQuestions),
-                const SizedBox(height: 32),
-                // Bouton démarrer
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppConstants.primaryColor, Color(0xFF005C38)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppConstants.primaryColor.withValues(alpha: 0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(examenProvider.notifier).initialiser(series);
-                        setState(() {
-                          _examenDemarre = true;
-                          _secondesRestantes = _dureeExamenMinutes * 60;
-                        });
-                        _demarrerTimer();
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 17),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 12, 36),
+                    child: Column(
+                      children: [
+                        // Top bar avec retour
+                        Row(
                           children: [
-                            Icon(
-                              Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Commencer l\'examen',
-                              style: TextStyle(
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_rounded,
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
                               ),
+                              onPressed: _quitterExamen,
                             ),
+                            const Spacer(),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        // Icône animée
+                        Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Text('🎓', style: TextStyle(fontSize: 46)),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Examen Blanc',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            'Testez vos connaissances sur toutes les séries de cours',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    'Les questions sont mélangées aléatoirement',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                  ),
-                ),
-              ]),
+              ),
             ),
-          ),
-        ],
+
+            // Contenu
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildInfoCard(context, totalQuestions),
+                  const SizedBox(height: 32),
+                  // Bouton démarrer
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppConstants.primaryColor, Color(0xFF005C38)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppConstants.primaryColor.withValues(
+                            alpha: 0.4,
+                          ),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          ref.read(examenProvider.notifier).initialiser(series);
+                          setState(() {
+                            _examenDemarre = true;
+                            _secondesRestantes = _dureeExamenMinutes * 60;
+                          });
+                          _demarrerTimer();
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 17),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'Commencer l\'examen',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      'Les questions sont mélangées aléatoirement',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

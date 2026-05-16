@@ -13,6 +13,10 @@ import '../../../providers/series_progress_provider.dart';
 class SeriesListScreen extends ConsumerWidget {
   const SeriesListScreen({super.key});
 
+  void _goBackToDashboard(BuildContext context) {
+    context.go(AppConstants.routeDashboard);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final seriesAsync = ref.watch(seriesRemoteProvider);
@@ -36,29 +40,35 @@ class SeriesListScreen extends ConsumerWidget {
   }
 
   Widget _buildContent(BuildContext context, List<Serie> series) {
-    return Scaffold(
-      body: series.isEmpty
-          ? _buildEmpty(context)
-          : CustomScrollView(
-              slivers: [
-                _buildSliverHeader(context, series.length),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _SerieCard(
-                        serie: series[index],
-                        index: index,
-                        onTap: () => context.push(
-                          '${AppConstants.routeSeries}/${series[index].id}',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBackToDashboard(context);
+      },
+      child: Scaffold(
+        body: series.isEmpty
+            ? _buildEmpty(context)
+            : CustomScrollView(
+                slivers: [
+                  _buildSliverHeader(context, series.length),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _SerieCard(
+                          serie: series[index],
+                          index: index,
+                          onTap: () => context.push(
+                            '${AppConstants.routeSeries}/${series[index].id}',
+                          ),
                         ),
+                        childCount: series.length,
                       ),
-                      childCount: series.length,
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -102,7 +112,7 @@ class SeriesListScreen extends ConsumerWidget {
                         Icons.arrow_back_rounded,
                         color: Colors.white,
                       ),
-                      onPressed: () => Navigator.of(context).maybePop(),
+                      onPressed: () => _goBackToDashboard(context),
                     ),
                     const Text(
                       'Cours',
